@@ -254,11 +254,19 @@
 const TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJQaXBlZnkiLCJpYXQiOjE3Njk3NTE1MTMsImp0aSI6ImQ4YmM3OWJhLWQ3YzAtNGQ2ZC1hYWNlLTk4NWExMDAyZGVhZSIsInN1YiI6MzA2NjUxNTY5LCJ1c2VyIjp7ImlkIjozMDY2NTE1NjksImVtYWlsIjoibGF1cmEuYW5ndWlhbm9Aa29udGVtcG8uaW8ifSwidXNlcl90eXBlIjoiYXV0aGVudGljYXRlZCJ9.32ONOzY1ccY1K9Yhj4oDQPFnCVw8ozZtv9Lm950516rXcX7y-_d4Z8mRreW_EpPOhuTchsQgwg9SeoQOMnoHzQ';
 const PIPE_ID = '304500848';
 
+// Phase IDs confirmed from API
+const PHASE_IDS = {
+  info: '327185334',  // Pending Information (Warehouse)
+  risk: '327450217',  // Risk Interview
+  form: '327185386',  // Approved – Pending Formalization Documents (Warehouse)
+  sig:  '327185388'   // Approved – Pending Signature (Warehouse)
+};
+
 const PHASE_MAP = {
   'Pending Information (Warehouse)': 'info',
   'Risk Interview': 'risk',
-  'Approved - Pending Formalization Documents (Warehouse)': 'form',
-  'Approved - Pending Signature (Warehouse)': 'sig'
+  'Approved \u2013 Pending Formalization Documents (Warehouse)': 'form',
+  'Approved \u2013 Pending Signature (Warehouse)': 'sig'
 };
 
 let chartsInstances = {};
@@ -280,13 +288,7 @@ async function pipefy(query, variables = {}) {
 
 // Get pipe phases IDs
 async function getPhaseIds() {
-  const q = `{ pipe(id: ${PIPE_ID}) { phases { id name } } }`;
-  const data = await pipefy(q);
-  const phases = {};
-  for (const p of data.pipe.phases) {
-    if (PHASE_MAP[p.name]) phases[PHASE_MAP[p.name]] = p.id;
-  }
-  return phases;
+  return PHASE_IDS;
 }
 
 // Get all cards from a phase (paginated)
@@ -320,9 +322,21 @@ async function getPhaseCards(phaseId) {
   return cards;
 }
 
+// Parse JSON array string values from Pipefy
+function parseArrayField(val) {
+  if (!val) return '';
+  if (val.startsWith('[')) {
+    try { const a = JSON.parse(val); return Array.isArray(a) ? a.join(', ') : val; } catch(e) {}
+  }
+  return val;
+}
+
 function getField(card, name) {
-  const f = card.fields.find(f => f.name === name);
-  return f ? (f.value || '') : '';
+  const norm = n => n.replace(/\u2013|\u2014|–|—/g, '-').trim().toLowerCase();
+  const target = norm(name);
+  const f = card.fields.find(f => norm(f.name) === target);
+  if (!f) return '';
+  return parseArrayField(f.value);
 }
 
 function fmtMXN(n) {
@@ -330,24 +344,28 @@ function fmtMXN(n) {
   return '$ ' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-function detectDocs(pendingText) {
-  const t = (pendingText || '').toLowerCase();
-  const hasSAT = t.includes('constancia') || t.includes('csf') || t.includes('situación fiscal') || t.includes('situacion fiscal') || t.includes('sat');
-  const hasOS = t.includes('obligado solidario') || t.includes('43qumym') || t.includes('buró') || t.includes('buro') || t.includes('os link');
-  const hasEDC = (t.includes('estado') && t.includes('cuenta')) || t.includes('edc');
+function getPendingDocs(card) {
+  // Field name is exactly "PENDING DOCUMENTS" (all caps), value is JSON array
+  const f = card.fields.find(f => f.name && f.name.trim().toUpperCase() === 'PENDING DOCUMENTS');
+  if (!f || !f.value) return [];
+  if (f.value.startsWith('[')) {
+    try { return JSON.parse(f.value); } catch(e) {}
+  }
+  return [f.value];
+}
+
+function detectDocs(docs) {
+  const t = docs.join(' ').toLowerCase();
+  const hasSAT = t.includes('constancia') || t.includes('csf') || t.includes('situacion fiscal') || t.includes('situación fiscal');
+  const hasOS = t.includes('obligado solidario') || t.includes('43qumym') || t.includes('buro') || t.includes('buró');
+  const hasEDC = (t.includes('estado') && t.includes('cuenta')) || t.includes('estados financieros') || t.includes('edc');
   return { hasSAT, hasOS, hasEDC };
 }
 
-function getDocChips(card, phase) {
-  let pendingText = '';
-  if (phase === 'info') pendingText = getField(card, 'Pending Information Requirements - Completed at') + ' ' + getField(card, 'PENDING DOCUMENTS:') + ' ' + getField(card, 'Pending Documents');
-  if (phase === 'form') pendingText = getField(card, 'Formalization Pending Documents') + ' ' + getField(card, 'Pending Documents');
-  // Also check all fields for pending-like content
-  if (!pendingText.trim()) {
-    const f = card.fields.find(f => f.name && f.name.toLowerCase().includes('pending'));
-    if (f) pendingText = f.value || '';
-  }
-  const { hasSAT, hasOS, hasEDC } = detectDocs(pendingText);
+function getDocChips(card) {
+  const docs = getPendingDocs(card);
+  if (docs.length === 0) return [{ label: 'Otros', cls: 'chip-otros' }];
+  const { hasSAT, hasOS, hasEDC } = detectDocs(docs);
   const chips = [];
   if (hasSAT && hasOS) return [{ label: 'Falta SAT+OS', cls: 'chip-sat' }];
   if (hasSAT) chips.push({ label: 'Falta SAT', cls: 'chip-sat' });
@@ -358,14 +376,20 @@ function getDocChips(card, phase) {
 }
 
 function getKAM(card) {
-  // Try assignees first
-  if (card.assignees && card.assignees.length > 0) return card.assignees[0].name;
-  const f = card.fields.find(f => f.name && (f.name.includes('KAM') || f.name.includes('Customer Success')));
-  return f ? (f.value || 'Sin KAM') : 'Sin KAM';
+  const f = card.fields.find(f => f.name && f.name.includes('Customer Success'));
+  if (f && f.value) {
+    if (f.value.startsWith('[')) {
+      try { const a = JSON.parse(f.value); return a[0] || 'Sin KAM'; } catch(e) {}
+    }
+    return f.value;
+  }
+  return 'Sin KAM';
 }
 
 function getAmount(card, field) {
-  const f = card.fields.find(f => f.name === field);
+  const norm = n => n.replace(/–|—/g, '-').trim().toLowerCase();
+  const target = norm(field);
+  const f = card.fields.find(f => norm(f.name) === target);
   if (!f) return 0;
   const v = (f.value || '').replace(/[^0-9.]/g, '');
   return parseFloat(v) || 0;
@@ -390,15 +414,15 @@ function renderDashboard(allCards) {
   document.getElementById('kpi-form').textContent = form.length;
   document.getElementById('kpi-sig').textContent = sig.length;
 
-  const formAmt = form.reduce((s, c) => s + getAmount(c, 'Amount Approved - Credit Analysis'), 0);
-  const sigAmt  = sig.reduce((s, c)  => s + getAmount(c, 'Amount Approved - Credit Analysis'), 0);
+  const formAmt = form.reduce((s, c) => s + getAmount(c, 'Amount Approved – Credit Analysis'), 0);
+  const sigAmt  = sig.reduce((s, c)  => s + getAmount(c, 'Amount Approved – Credit Analysis'), 0);
   document.getElementById('kpi-form-amt').textContent = fmtMXN(formAmt);
   document.getElementById('kpi-sig-amt').textContent  = fmtMXN(sigAmt);
 
   // Docs chart
   const docCounts = { 'Falta SAT': 0, 'Falta OS': 0, 'Falta SAT+OS': 0, 'Falta EDC/Otros': 0, 'Otros': 0 };
   for (const c of info) {
-    const chips = getDocChips(c, 'info');
+    const chips = getDocChips(c);
     for (const ch of chips) {
       const k = ch.label;
       if (docCounts[k] !== undefined) docCounts[k]++;
@@ -423,7 +447,7 @@ function renderDashboard(allCards) {
   for (const c of allCards) {
     const kam = getKAM(c);
     if (!kamAmounts[kam]) kamAmounts[kam] = { info: 0, risk: 0, form: 0, sig: 0 };
-    const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved - Credit Analysis');
+    const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved – Credit Analysis');
     kamAmounts[kam][c._phase] += amt;
   }
   const kamNames = Object.keys(kamAmounts);
@@ -449,8 +473,8 @@ function renderDashboard(allCards) {
 
   // Priority table
   const priority = info.filter(c => {
-    const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved - Credit Analysis');
-    const chips = getDocChips(c, 'info');
+    const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved – Credit Analysis');
+    const chips = getDocChips(c);
     const hasSAT = chips.some(ch => ch.label.includes('SAT'));
     const hasOS = chips.some(ch => ch.label.includes('OS'));
     return amt > 200000 && hasSAT && !hasOS;
@@ -466,7 +490,7 @@ function renderDashboard(allCards) {
   } else {
     tbody.innerHTML = priority.map(c => {
       const buyerId = getField(c, 'Buyer Account ID') || c.id;
-      const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved - Credit Analysis');
+      const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved – Credit Analysis');
       return `<tr>
         <td class="buyer-id">${buyerId}</td>
         <td>${c.title}</td>
@@ -557,13 +581,13 @@ function renderKamContent(cards) {
 function renderBuyerCard(card, phase) {
   const buyerId = getField(card, 'Buyer Account ID') || card.id;
   const reqAmt = getAmount(card, 'Amount Requested');
-  const approvedAmt = getAmount(card, 'Amount Approved - Credit Analysis');
-  const folder = getField(card, 'Buyer Drive Folder - Link');
+  const approvedAmt = getAmount(card, 'Amount Approved – Credit Analysis');
+  const folder = getField(card, 'Buyer Drive Folder – Link ');
 
   let extra = '';
 
   if (phase === 'info' || phase === 'form') {
-    const chips = getDocChips(card, phase);
+    const chips = getDocChips(card);
     extra = `<div class="chips">${chips.map(ch => `<span class="chip ${ch.cls}">${ch.label}</span>`).join('')}</div>`;
     if (folder) extra += `<div class="doc-field">📁 ${folder}</div>`;
   }
