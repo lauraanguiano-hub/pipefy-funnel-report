@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontempo — Pipeline Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #07090f; --bg2: #0d1018; --bg3: #131720; --border: #1e2535;
+    --orange: #FB8500; --cyan: #00d4ff; --purple: #5A3EEF;
+    --green: #00e5a0; --red: #ff4757; --yellow: #ffd32a;
+    --text: #e8eaf0; --muted: #6b7280; --card-r: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  #loader { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; gap: 16px; }
+  .loader-ring { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loader p { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  #error-banner { display: none; background: #1a0a0a; border: 1px solid var(--red); color: var(--red); padding: 12px 20px; border-radius: 8px; margin: 20px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  #app { display: none; }
+  header { padding: 20px 28px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+  .logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--orange); }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .last-update { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .refresh-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+  .refresh-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  main { padding: 20px 28px; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .kpi.purple-bg { background: #1a1240; border-color: var(--purple); }
+  .kpi.green-bg { background: #031a10; border-color: var(--green); }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; }
+  .kpi-value { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .kpi-value.orange { color: var(--orange); }
+  .kpi-value.cyan { color: var(--cyan); }
+  .kpi-value.red { color: var(--red); }
+  .kpi-value.purple { color: var(--purple); }
+  .kpi-value.green { color: var(--green); }
+
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 18px; }
+  .chart-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 200px; }
+
+  .priority-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 18px; margin-bottom: 20px; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 500; padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid #0f1420; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .amount-cell { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--orange); }
+
+  .kam-section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 18px; margin-bottom: 20px; }
+  .kam-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .kam-tab { background: var(--bg3); border: 1px solid var(--border); color: var(--muted); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+  .kam-tab.active { background: var(--orange); border-color: var(--orange); color: #000; font-weight: 600; }
+  .kam-tab:hover:not(.active) { border-color: var(--orange); color: var(--orange); }
+
+  .kam-content { display: none; }
+  .kam-content.active { display: block; }
+
+  .funnel-section { margin-bottom: 18px; }
+  .funnel-header { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg3); border-radius: 8px; margin-bottom: 8px; }
+  .funnel-label { font-size: 13px; font-weight: 600; }
+  .funnel-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; background: var(--bg); padding: 2px 8px; border-radius: 10px; color: var(--muted); }
+  .funnel-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-info { background: var(--cyan); }
+  .dot-risk { background: var(--yellow); }
+  .dot-form { background: var(--purple); }
+  .dot-sig { background: var(--green); }
+
+  .merchant-group { margin-left: 18px; margin-bottom: 10px; }
+  .merchant-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; padding-left: 4px; }
+
+  .buyer-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 6px; }
+  .buyer-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+  .buyer-name { font-weight: 600; font-size: 13px; }
+  .buyer-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .buyer-created { font-size: 11px; margin-top: 2px; }
+  .buyer-created.old { color: var(--red); font-weight: 600; }
+  .buyer-created.ok { color: var(--muted); }
+  .buyer-amount { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--orange); white-space: nowrap; margin-left: 10px; flex-shrink: 0; }
+
+  .field-row { margin-top: 6px; font-size: 12px; }
+  .field-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+  .field-value { color: var(--text); line-height: 1.4; }
+  .field-value.mono-sm { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  .chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .chip { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; font-family: 'JetBrains Mono', monospace; }
+  .chip-sat { background: #2a1a00; color: var(--orange); border: 1px solid #4a3000; }
+  .chip-os { background: #0a1a2a; color: var(--cyan); border: 1px solid #0a3050; }
+  .chip-edc { background: #1a0a2a; color: #c084fc; border: 1px solid #3a1a5a; }
+  .chip-otros { background: #1a1a1a; color: var(--muted); border: 1px solid var(--border); }
+
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 500; display: inline-block; margin-top: 6px; }
+  .badge-ok { background: #031a10; color: var(--green); border: 1px solid #0a4a2a; }
+  .badge-pend { background: #1a1000; color: var(--yellow); border: 1px solid #4a3000; }
+
+  .doc-list { margin-top: 6px; font-size: 11px; color: var(--text); line-height: 1.6; }
+  .doc-list-item { display: flex; gap: 6px; }
+  .doc-list-item::before { content: '•'; color: var(--muted); flex-shrink: 0; }
+
+  .sig-link { font-size: 11px; color: var(--muted); margin-top: 4px; word-break: break-all; font-family: 'JetBrains Mono', monospace; }
+
+  .empty-state { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+  .divider { height: 1px; background: var(--border); margin: 8px 0; }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-ring"></div>
+  <p>Cargando pipeline desde Pipefy...</p>
+</div>
+<div id="error-banner"></div>
+
+<div id="app">
+  <header>
+    <div class="logo">Kontempo</div>
+    <div class="header-right">
+      <span class="last-update" id="last-update">—</span>
+      <button class="refresh-btn" onclick="loadData()">⟳ Actualizar</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-label">Total Funnel</div><div class="kpi-value orange" id="kpi-total">—</div><div class="kpi-sub">buyers activos</div></div>
+      <div class="kpi"><div class="kpi-label">Pending Information</div><div class="kpi-value cyan" id="kpi-info">—</div><div class="kpi-sub">buyers</div></div>
+      <div class="kpi"><div class="kpi-label">Risk Interview</div><div class="kpi-value red" id="kpi-risk">—</div><div class="kpi-sub">buyers</div></div>
+      <div class="kpi purple-bg"><div class="kpi-label">Pending Formalization</div><div class="kpi-value purple" id="kpi-form">—</div><div class="kpi-sub" id="kpi-form-amt">$ —</div></div>
+      <div class="kpi green-bg"><div class="kpi-label">Pending Signature</div><div class="kpi-value green" id="kpi-sig">—</div><div class="kpi-sub" id="kpi-sig-amt">$ —</div></div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Pending Information — Desglose por Documento</div>
+        <div class="chart-wrap"><canvas id="chartDocs"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Pipeline por KAM ($ MXN)</div>
+        <div class="chart-wrap"><canvas id="chartKam"></canvas></div>
+      </div>
+    </div>
+
+    <div class="priority-card">
+      <div class="section-title">Priority Cards (&gt;200K, SAT Sí, NO Obligado)</div>
+      <table>
+        <thead><tr><th>Buyer ID</th><th>Buyer</th><th>Requested Amount</th></tr></thead>
+        <tbody id="priority-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="kam-section">
+      <div class="section-title">Pipeline por KAM</div>
+      <div class="kam-tabs" id="kam-tabs"></div>
+      <div id="kam-contents"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJQaXBlZnkiLCJpYXQiOjE3Njk3NTE1MTMsImp0aSI6ImQ4YmM3OWJhLWQ3YzAtNGQ2ZC1hYWNlLTk4NWExMDAyZGVhZSIsInN1YiI6MzA2NjUxNTY5LCJ1c2VyIjp7ImlkIjozMDY2NTE1NjksImVtYWlsIjoibGF1cmEuYW5ndWlhbm9Aa29udGVtcG8uaW8ifSwidXNlcl90eXBlIjoiYXV0aGVudGljYXRlZCJ9.32ONOzY1ccY1K9Yhj4oDQPFnCVw8ozZtv9Lm950516rXcX7y-_d4Z8mRreW_EpPOhuTchsQgwg9SeoQOMnoHzQ';
+
+const PHASE_IDS = {
+  info: '327185334',
+  risk: '327450217',
+  form: '327185386',
+  sig:  '327185388'
+};
+
+const VALID_KAMS = ['jorge mendonza', 'jorge mendoza', 'lucy alarcon', 'lucy alarcón', 'benjamin rodriguez', 'benjamín rodriguez', 'hector olibero', 'héctor olibero', 'elizabeth sanjuan', 'elizabeth san juan'];
+
+let chartsInstances = {};
+
+async function pipefy(query, variables = {}) {
+  const res = await fetch('https://api.pipefy.com/graphql', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.errors) throw new Error(data.errors[0].message);
+  return data.data;
+}
+
+async function getPhaseCards(phaseId) {
+  let cards = [], cursor = null, hasMore = true;
+  while (hasMore) {
+    const q = `query($phaseId: ID!, $after: String) {
+      phase(id: $phaseId) {
+        cards(first: 50, after: $after) {
+          pageInfo { hasNextPage endCursor }
+          edges { node {
+            id title created_at
+            labels { name }
+            fields { name value }
+          }}
+        }
+      }
+    }`;
+    const data = await pipefy(q, { phaseId, after: cursor });
+    const page = data.phase.cards;
+    cards.push(...page.edges.map(e => e.node));
+    hasMore = page.pageInfo.hasNextPage;
+    cursor = page.pageInfo.endCursor;
+  }
+  return cards;
+}
+
+// ── Field helpers ──────────────────────────────────────────
+function parseVal(val) {
+  if (!val) return '';
+  if (val.startsWith('[')) {
+    try { const a = JSON.parse(val); return Array.isArray(a) ? a : val; } catch(e) {}
+  }
+  return val;
+}
+
+function getField(card, name) {
+  const norm = s => s.replace(/[–—]/g, '-').trim().toLowerCase();
+  const f = card.fields.find(f => norm(f.name) === norm(name));
+  if (!f || !f.value) return '';
+  const v = parseVal(f.value);
+  return Array.isArray(v) ? v.join(', ') : v;
+}
+
+function getFieldArr(card, name) {
+  const norm = s => s.replace(/[–—]/g, '-').trim().toLowerCase();
+  const f = card.fields.find(f => norm(f.name) === norm(name));
+  if (!f || !f.value) return [];
+  const v = parseVal(f.value);
+  return Array.isArray(v) ? v : [v];
+}
+
+function getKAM(card) {
+  const arr = getFieldArr(card, 'Customer Success - KAM');
+  return arr[0] || '';
+}
+
+function isValidKAM(kam) {
+  if (!kam) return false;
+  const k = kam.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return VALID_KAMS.some(v => {
+    const vn = v.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return k.includes(vn) || vn.includes(k);
+  });
+}
+
+function getAmount(card, field) {
+  const norm = s => s.replace(/[–—]/g, '-').trim().toLowerCase();
+  const f = card.fields.find(f => norm(f.name) === norm(field));
+  if (!f || !f.value) return 0;
+  return parseFloat(f.value.replace(/[^0-9.]/g, '')) || 0;
+}
+
+function fmtMXN(n) {
+  if (!n) return '—';
+  return '$ ' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function daysSince(isoDate) {
+  return Math.floor((Date.now() - new Date(isoDate)) / 86400000);
+}
+
+function fmtDate(isoDate) {
+  return new Date(isoDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function getPendingDocs(card) {
+  return getFieldArr(card, 'PENDING DOCUMENTS');
+}
+
+function detectDocs(docs) {
+  const t = docs.join(' ').toLowerCase();
+  const hasSAT = t.includes('constancia') || t.includes('csf') || t.includes('situacion fiscal') || t.includes('situación fiscal');
+  const hasOS  = t.includes('obligado solidario') || t.includes('43qumym') || t.includes('buro') || t.includes('buró');
+  const hasEDC = (t.includes('estado') && t.includes('cuenta')) || t.includes('estados financieros');
+  return { hasSAT, hasOS, hasEDC };
+}
+
+function getDocChips(card) {
+  const docs = getPendingDocs(card);
+  if (!docs.length) return [{ label: 'Otros', cls: 'chip-otros' }];
+  const { hasSAT, hasOS, hasEDC } = detectDocs(docs);
+  if (hasSAT && hasOS) return [{ label: 'Falta SAT+OS', cls: 'chip-sat' }];
+  const chips = [];
+  if (hasSAT) chips.push({ label: 'Falta SAT', cls: 'chip-sat' });
+  if (hasOS)  chips.push({ label: 'Falta OS',  cls: 'chip-os'  });
+  if (hasEDC) chips.push({ label: 'Falta EDC/Otros', cls: 'chip-edc' });
+  if (!chips.length) chips.push({ label: 'Otros', cls: 'chip-otros' });
+  return chips;
+}
+
+function hasLabel(card, name) {
+  return card.labels && card.labels.some(l => l.name.toLowerCase().includes(name.toLowerCase()));
+}
+
+// ── Render helpers ─────────────────────────────────────────
+function createdBadge(isoDate) {
+  const days = daysSince(isoDate);
+  const label = `Creado por Account Kontempo • ${fmtDate(isoDate)}`;
+  const cls = days > 30 ? 'buyer-created old' : 'buyer-created ok';
+  const warn = days > 30 ? ` ⚠ ${days} días` : '';
+  return `<div class="${cls}">${label}${warn}</div>`;
+}
+
+function renderCard_Info(card) {
+  const buyerId  = getField(card, 'Buyer Account ID');
+  const merchant = getField(card, 'Merchant Name');
+  const kam      = getKAM(card);
+  const amt      = getAmount(card, 'Amount Requested');
+  const docs     = getPendingDocs(card);
+  const chips    = getDocChips(card);
+  const notas    = getField(card, 'Notas - Request Review CS/CX');
+
+  return `<div class="buyer-card">
+    <div class="buyer-card-header">
+      <div style="flex:1">
+        <div class="buyer-name">${card.title}</div>
+        <div class="buyer-id">${buyerId}</div>
+        ${createdBadge(card.created_at)}
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${merchant}</div>
+        <div style="font-size:11px;color:var(--cyan);margin-top:2px">👤 ${kam}</div>
+      </div>
+      <div class="buyer-amount">${fmtMXN(amt)}</div>
+    </div>
+    <div class="chips">${chips.map(ch => `<span class="chip ${ch.cls}">${ch.label}</span>`).join('')}</div>
+    ${docs.length ? `<div class="field-row"><div class="field-label">Pending Documents</div><div class="doc-list">${docs.map(d => `<div class="doc-list-item">${d}</div>`).join('')}</div></div>` : ''}
+    ${notas ? `<div class="divider"></div><div class="field-row"><div class="field-label">Notas - Request Review CS/CX</div><div class="field-value">${notas}</div></div>` : ''}
+  </div>`;
+}
+
+function renderCard_Risk(card) {
+  const buyerId    = getField(card, 'Buyer Account ID');
+  const merchant   = getField(card, 'Merchant Name');
+  const kam        = getKAM(card);
+  const amt        = getAmount(card, 'Amount Requested');
+  const entrevista = hasLabel(card, 'Entrevista agendada');
+  const notas      = getField(card, 'Notas - Request Review CS/CX');
+
+  return `<div class="buyer-card">
+    <div class="buyer-card-header">
+      <div style="flex:1">
+        <div class="buyer-name">${card.title}</div>
+        <div class="buyer-id">${buyerId}</div>
+        ${createdBadge(card.created_at)}
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${merchant}</div>
+        <div style="font-size:11px;color:var(--cyan);margin-top:2px">👤 ${kam}</div>
+      </div>
+      <div class="buyer-amount">${fmtMXN(amt)}</div>
+    </div>
+    <span class="badge ${entrevista ? 'badge-ok' : 'badge-pend'}">${entrevista ? '✓ Entrevista agendada' : '⏳ Entrevista pendiente'}</span>
+    ${notas ? `<div class="divider"></div><div class="field-row"><div class="field-label">Notas - Request Review CS/CX</div><div class="field-value">${notas}</div></div>` : ''}
+  </div>`;
+}
+
+function renderCard_Form(card) {
+  const buyerId  = getField(card, 'Buyer Account ID');
+  const merchant = getField(card, 'Merchant Name');
+  const kam      = getKAM(card);
+  const amt      = getAmount(card, 'Amount Approved - Credit Analysis');
+  const formDocs = getFieldArr(card, 'Formalization Pending Documents');
+  const pending  = getPendingDocs(card);
+  const allDocs  = [...new Set([...formDocs, ...pending])].filter(Boolean);
+  const chips    = getDocChips(card);
+  const notas    = getField(card, 'Notas - Request Review CS/CX');
+
+  return `<div class="buyer-card">
+    <div class="buyer-card-header">
+      <div style="flex:1">
+        <div class="buyer-name">${card.title}</div>
+        <div class="buyer-id">${buyerId}</div>
+        ${createdBadge(card.created_at)}
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${merchant}</div>
+        <div style="font-size:11px;color:var(--cyan);margin-top:2px">👤 ${kam}</div>
+      </div>
+      <div class="buyer-amount">${fmtMXN(amt)}</div>
+    </div>
+    <div class="chips">${chips.map(ch => `<span class="chip ${ch.cls}">${ch.label}</span>`).join('')}</div>
+    ${allDocs.length ? `<div class="field-row"><div class="field-label">Formalization Pending Documents</div><div class="doc-list">${allDocs.map(d => `<div class="doc-list-item">${d}</div>`).join('')}</div></div>` : ''}
+    ${notas ? `<div class="divider"></div><div class="field-row"><div class="field-label">Notas - Request Review CS/CX</div><div class="field-value">${notas}</div></div>` : ''}
+  </div>`;
+}
+
+function renderCard_Sig(card) {
+  const buyerId  = getField(card, 'Buyer Account ID');
+  const merchant = getField(card, 'Merchant Name');
+  const kam      = getKAM(card);
+  const amt      = getAmount(card, 'Amount Approved - Credit Analysis');
+  const weelink  = getField(card, 'WeeTrust Link');
+  const folder   = getField(card, 'Buyer Drive Folder - Link ');
+  const notas    = getField(card, 'Notas - Request Review CS/CX');
+
+  return `<div class="buyer-card">
+    <div class="buyer-card-header">
+      <div style="flex:1">
+        <div class="buyer-name">${card.title}</div>
+        <div class="buyer-id">${buyerId}</div>
+        ${createdBadge(card.created_at)}
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${merchant}</div>
+        <div style="font-size:11px;color:var(--cyan);margin-top:2px">👤 ${kam}</div>
+      </div>
+      <div class="buyer-amount">${fmtMXN(amt)}</div>
+    </div>
+    ${weelink ? `<div class="field-row"><div class="field-label">WeeTrust Link</div><div class="sig-link">${weelink}</div></div>` : ''}
+    ${folder  ? `<div class="field-row"><div class="field-label">Drive Folder</div><div class="sig-link">${folder}</div></div>` : ''}
+    ${notas   ? `<div class="divider"></div><div class="field-row"><div class="field-label">Notas - Request Review CS/CX</div><div class="field-value">${notas}</div></div>` : ''}
+  </div>`;
+}
+
+// ── Charts ─────────────────────────────────────────────────
+function renderChart(id, type, data, options) {
+  if (chartsInstances[id]) chartsInstances[id].destroy();
+  chartsInstances[id] = new Chart(document.getElementById(id).getContext('2d'), { type, data, options });
+}
+
+// ── Main render ────────────────────────────────────────────
+function renderDashboard(allCards) {
+  // Filter to valid KAMs only
+  const validCards = allCards.filter(c => isValidKAM(getKAM(c)));
+
+  const info = validCards.filter(c => c._phase === 'info');
+  const risk = validCards.filter(c => c._phase === 'risk');
+  const form = validCards.filter(c => c._phase === 'form');
+  const sig  = validCards.filter(c => c._phase === 'sig');
+
+  // KPIs (total = all phases including unfiltered for total funnel)
+  document.getElementById('kpi-total').textContent = validCards.length;
+  document.getElementById('kpi-info').textContent  = info.length;
+  document.getElementById('kpi-risk').textContent  = risk.length;
+  document.getElementById('kpi-form').textContent  = form.length;
+  document.getElementById('kpi-sig').textContent   = sig.length;
+
+  const formAmt = form.reduce((s, c) => s + getAmount(c, 'Amount Approved - Credit Analysis'), 0);
+  const sigAmt  = sig.reduce((s,  c) => s + getAmount(c, 'Amount Approved - Credit Analysis'), 0);
+  document.getElementById('kpi-form-amt').textContent = fmtMXN(formAmt);
+  document.getElementById('kpi-sig-amt').textContent  = fmtMXN(sigAmt);
+
+  // Docs chart
+  const dc = { 'Falta SAT': 0, 'Falta OS': 0, 'Falta SAT+OS': 0, 'Falta EDC/Otros': 0, 'Otros': 0 };
+  for (const c of info) {
+    for (const ch of getDocChips(c)) {
+      if (dc[ch.label] !== undefined) dc[ch.label]++;
+      else dc['Otros']++;
+    }
+  }
+  renderChart('chartDocs', 'bar', {
+    labels: Object.keys(dc),
+    datasets: [{ data: Object.values(dc), backgroundColor: ['#FB8500','#00d4ff','#5A3EEF','#c084fc','#6b7280'], borderRadius: 4, borderSkipped: false }]
+  }, {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#1e2535' }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 10 } } },
+      y: { grid: { display: false }, ticks: { color: '#e8eaf0', font: { family: 'DM Sans', size: 11 } } }
+    }
+  });
+
+  // KAM amounts chart
+  const kamAmts = {};
+  for (const c of validCards) {
+    const kam = getKAM(c).split(' ')[0];
+    if (!kamAmts[kam]) kamAmts[kam] = { info: 0, risk: 0, form: 0, sig: 0 };
+    const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved - Credit Analysis');
+    kamAmts[kam][c._phase] += amt;
+  }
+  const kamNames = Object.keys(kamAmts);
+  renderChart('chartKam', 'bar', {
+    labels: kamNames,
+    datasets: [
+      { label: 'Information',    data: kamNames.map(k => kamAmts[k].info), backgroundColor: '#00d4ff', borderRadius: 2 },
+      { label: 'Risk',           data: kamNames.map(k => kamAmts[k].risk), backgroundColor: '#ffd32a', borderRadius: 2 },
+      { label: 'Formalization',  data: kamNames.map(k => kamAmts[k].form), backgroundColor: '#5A3EEF', borderRadius: 2 },
+      { label: 'Signature',      data: kamNames.map(k => kamAmts[k].sig),  backgroundColor: '#00e5a0', borderRadius: 2 }
+    ]
+  }, {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#6b7280', font: { family: 'DM Sans', size: 11 }, boxWidth: 10 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtMXN(ctx.raw)}` } } },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { color: '#e8eaf0', font: { family: 'DM Sans', size: 11 } } },
+      y: { stacked: true, grid: { color: '#1e2535' }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 10 },
+        callback: v => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v } }
+    }
+  });
+
+  // Priority table — from info phase, >200K, SAT sí, NO Obligado
+  const priority = info.filter(c => {
+    const amt = getAmount(c, 'Amount Requested');
+    const chips = getDocChips(c);
+    const hasSAT = chips.some(ch => ch.label.includes('SAT'));
+    const hasOS  = chips.some(ch => ch.label.includes('OS'));
+    return amt > 200000 && hasSAT && !hasOS;
+  }).sort((a, b) => getAmount(b, 'Amount Requested') - getAmount(a, 'Amount Requested'));
+
+  const tbody = document.getElementById('priority-tbody');
+  tbody.innerHTML = priority.length
+    ? priority.map(c => `<tr>
+        <td class="mono">${getField(c, 'Buyer Account ID')}</td>
+        <td>${c.title}</td>
+        <td class="amount-cell">${fmtMXN(getAmount(c, 'Amount Requested'))}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="3" class="empty-state">No hay priority cards en este momento</td></tr>';
+
+  // KAM tabs — group valid cards by KAM
+  const kamGroups = {};
+  for (const c of validCards) {
+    const kam = getKAM(c) || 'Sin KAM';
+    if (!kamGroups[kam]) kamGroups[kam] = [];
+    kamGroups[kam].push(c);
+  }
+
+  const tabsEl = document.getElementById('kam-tabs');
+  const contentsEl = document.getElementById('kam-contents');
+  tabsEl.innerHTML = '';
+  contentsEl.innerHTML = '';
+
+  Object.keys(kamGroups).sort().forEach((kam, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'kam-tab' + (i === 0 ? ' active' : '');
+    tab.textContent = `${kam.split(' ')[0]} (${kamGroups[kam].length})`;
+    tab.onclick = () => {
+      document.querySelectorAll('.kam-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.kam-content').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('kam-' + i).classList.add('active');
+    };
+    tabsEl.appendChild(tab);
+
+    const content = document.createElement('div');
+    content.className = 'kam-content' + (i === 0 ? ' active' : '');
+    content.id = 'kam-' + i;
+    content.innerHTML = renderKamContent(kamGroups[kam]);
+    contentsEl.appendChild(content);
+  });
+
+  document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-MX');
+}
+
+function renderKamContent(cards) {
+  const phases = [
+    { key: 'sig',  label: 'Approved – Pending Signature',              dot: 'dot-sig',  render: renderCard_Sig  },
+    { key: 'form', label: 'Approved – Pending Formalization Documents', dot: 'dot-form', render: renderCard_Form },
+    { key: 'risk', label: 'Risk Interview',                             dot: 'dot-risk', render: renderCard_Risk },
+    { key: 'info', label: 'Pending Information',                        dot: 'dot-info', render: renderCard_Info },
+  ];
+
+  let html = '';
+  for (const phase of phases) {
+    const phaseCards = cards.filter(c => c._phase === phase.key);
+    if (!phaseCards.length) continue;
+
+    // Group by merchant
+    const merchants = {};
+    for (const c of phaseCards) {
+      const m = getField(c, 'Merchant Name') || 'Sin Merchant';
+      if (!merchants[m]) merchants[m] = [];
+      merchants[m].push(c);
+    }
+
+    html += `<div class="funnel-section">
+      <div class="funnel-header">
+        <div class="funnel-dot ${phase.dot}"></div>
+        <div class="funnel-label">${phase.label}</div>
+        <div class="funnel-count">${phaseCards.length} buyers</div>
+      </div>`;
+
+    for (const [merchant, mCards] of Object.entries(merchants)) {
+      html += `<div class="merchant-group">
+        <div class="merchant-label">${merchant}</div>
+        ${mCards.map(c => phase.render(c)).join('')}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  return html || '<div class="empty-state">Sin cards en este KAM</div>';
+}
+
+// ── Load ───────────────────────────────────────────────────
+async function loadData() {
+  document.getElementById('loader').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('error-banner').style.display = 'none';
+
+  try {
+    const allCards = [];
+    for (const [phaseKey, phaseId] of Object.entries(PHASE_IDS)) {
+      const cards = await getPhaseCards(phaseId);
+      cards.forEach(c => c._phase = phaseKey);
+      allCards.push(...cards);
+    }
+    renderDashboard(allCards);
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } catch (err) {
+    document.getElementById('loader').style.display = 'none';
+    const banner = document.getElementById('error-banner');
+    banner.style.display = 'block';
+    banner.textContent = '⚠ Error: ' + err.message;
+    document.getElementById('app').style.display = 'block';
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>
