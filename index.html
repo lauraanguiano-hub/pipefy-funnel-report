@@ -1,149 +1,636 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Dashboard Buyer Activation - Kontempo</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontempo — Pipeline Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#07090f;--bg-subtle:#0c1019;--card:#111827;--border:#1e2740;--border-light:#2a3555;--naranja:#f97316;--cyan:#06b6d4;--morado:#8b5cf6;--verde:#10b981;--verde-dim:rgba(16,185,129,0.10);--rojo:#ef4444;--amarillo:#eab308;--amarillo-dim:rgba(234,179,8,0.10);--text:#f0f2f5;--text-secondary:#94a3b8;--text-muted:#64748b}
-body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
-body::before{content:'';position:fixed;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(249,115,22,0.06) 0%,transparent 70%);pointer-events:none;z-index:0}
-body::after{content:'';position:fixed;bottom:-300px;left:-200px;width:800px;height:800px;background:radial-gradient(circle,rgba(6,182,212,0.04) 0%,transparent 70%);pointer-events:none;z-index:0}
-.container{max-width:1440px;margin:0 auto;padding:32px 40px;position:relative;z-index:1}
-.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px;padding-bottom:24px;border-bottom:1px solid var(--border)}
-.header-left h1{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:800;background:linear-gradient(135deg,var(--text) 0%,var(--text-secondary) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px}
-.header-left .subtitle{color:var(--text-muted);font-size:0.88rem;margin-top:6px;display:flex;align-items:center;gap:8px}
-.header-left .subtitle .dot{width:6px;height:6px;border-radius:50%;background:var(--verde);animation:pulse-dot 2s ease-in-out infinite}
-@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(16,185,129,0.4)}50%{opacity:0.7;box-shadow:0 0 0 6px rgba(16,185,129,0)}}
-.logo-mark{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.75rem;color:var(--naranja);letter-spacing:3px;text-transform:uppercase;opacity:0.8}
-.tabs{display:flex;gap:4px;margin-bottom:32px;background:var(--bg-subtle);padding:4px;border-radius:12px;width:fit-content;border:1px solid var(--border)}
-.tab{padding:10px 24px;cursor:pointer;border-radius:9px;font-weight:500;font-size:0.88rem;transition:all .25s;color:var(--text-muted);user-select:none}
-.tab:hover{color:var(--text-secondary)}
-.tab.active{background:var(--naranja);color:white;box-shadow:0 2px 12px rgba(249,115,22,0.3)}
-.tab-content{display:none}.tab-content.active{display:block;animation:fadeIn .3s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:32px}
-.kpi-card{background:var(--card);border-radius:14px;padding:22px 20px;border:1px solid var(--border);position:relative;overflow:hidden;transition:all .25s}
-.kpi-card:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.25)}
-.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0}
-.kpi-card.total::before{background:linear-gradient(90deg,var(--naranja),var(--cyan))}
-.kpi-card.info::before{background:var(--naranja)}
-.kpi-card.risk::before{background:var(--cyan)}
-.kpi-card.form{background:linear-gradient(135deg,rgba(139,92,246,.12) 0%,var(--card) 100%)}.kpi-card.form::before{background:var(--morado)}
-.kpi-card.sig{background:linear-gradient(135deg,rgba(16,185,129,.12) 0%,var(--card) 100%)}.kpi-card.sig::before{background:var(--verde)}
-.kpi-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:12px}
-.kpi-value{font-family:'JetBrains Mono',monospace;font-size:1.75rem;font-weight:700;line-height:1}
-.kpi-amount{font-family:'JetBrains Mono',monospace;font-size:.82rem;font-weight:600;margin-top:6px}
-.kpi-card.total .kpi-amount{color:var(--naranja)}.kpi-card.info .kpi-amount{color:var(--naranja)}.kpi-card.risk .kpi-amount{color:var(--cyan)}.kpi-card.form .kpi-amount{color:var(--morado)}.kpi-card.sig .kpi-amount{color:var(--verde)}
-.card{background:var(--card);border-radius:14px;padding:24px;border:1px solid var(--border)}
-.card-title{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:18px;display:flex;align-items:center;gap:8px}
-.card-title::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--naranja)}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.funnel-visual{display:flex;align-items:center;gap:0;padding:0 20px}
-.funnel-stage{flex:1;text-align:center;padding:16px 8px}
-.funnel-bar{height:6px;border-radius:3px;margin-bottom:10px;background:rgba(255,255,255,.04);overflow:hidden}
-.funnel-bar-fill{height:100%;border-radius:3px}
-.funnel-stage-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.funnel-stage-value{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;margin-top:4px}
-.funnel-arrow{color:var(--text-muted);font-size:1.2rem;opacity:.3;flex-shrink:0}
-.breakdown-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
-.breakdown-chip{background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;padding:14px 12px;text-align:center}
-.breakdown-chip .chip-value{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:700}
-.breakdown-chip .chip-label{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-top:4px}
-.priority-table{width:100%;border-collapse:separate;border-spacing:0 4px}
-.priority-table th{text-align:left;padding:8px 12px;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);border-bottom:1px solid var(--border)}
-.priority-table td{padding:10px 12px;font-size:.82rem;vertical-align:middle}
-.priority-table tbody tr{background:rgba(239,68,68,.03);transition:background .2s}
-.priority-table tbody tr:hover{background:rgba(239,68,68,.07)}
-.priority-table tbody tr td:first-child{border-radius:8px 0 0 8px}
-.priority-table tbody tr td:last-child{border-radius:0 8px 8px 0}
-.amount-cell{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--rojo)}
-.id-cell{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted)}
-.kam-select-wrap{margin-bottom:24px}
-.kam-select-wrap label{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);display:block;margin-bottom:8px}
-select{background:var(--bg-subtle);color:var(--text);border:1px solid var(--border);padding:12px 16px;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;width:100%;max-width:360px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
-select:focus{outline:none;border-color:var(--naranja);box-shadow:0 0 0 3px rgba(249,115,22,.15)}
-.stage-section{margin-bottom:24px}
-.stage-header{display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:8px}
-.stage-indicator{width:10px;height:10px;border-radius:3px}
-.stage-header h3{font-size:.95rem;font-weight:600}
-.detail-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.82rem;margin-bottom:8px}
-.detail-table th{text-align:left;padding:10px 12px;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--card)}
-.detail-table td{padding:10px 12px;border-bottom:1px solid rgba(30,39,64,.5);vertical-align:top}
-.detail-table .group-row{background:rgba(6,182,212,.05)}
-.detail-table .group-row td{font-weight:600;color:var(--cyan);font-size:.78rem;padding:8px 12px}
-.detail-table .buyer-name{color:var(--text);font-weight:500}
-.detail-table .buyer-id{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--text-muted)}
-.detail-table .doc-detail{font-size:.75rem;color:var(--text-secondary);line-height:1.6;max-width:400px;word-break:break-word}
-.detail-table .link-text{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--verde);word-break:break-all;line-height:1.6}
-.entrevista-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;background:var(--verde-dim);color:var(--verde)}
-.pendiente-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600;background:var(--amarillo-dim);color:var(--amarillo)}
-.stage-total-bar{display:flex;justify-content:flex-end;align-items:center;padding:12px 16px;background:rgba(16,185,129,.05);border-radius:8px;border:1px solid rgba(16,185,129,.1);margin-bottom:24px}
-.stage-total-bar span{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.95rem;color:var(--verde)}
-@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.two-col{grid-template-columns:1fr}.breakdown-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:768px){.container{padding:20px 16px}.kpi-grid{grid-template-columns:repeat(2,1fr)}.header{flex-direction:column;align-items:flex-start;gap:12px}.header-left h1{font-size:1.6rem}.funnel-visual{flex-direction:column}.funnel-arrow{transform:rotate(90deg)}}
+  :root {
+    --bg: #07090f;
+    --bg2: #0d1018;
+    --bg3: #131720;
+    --border: #1e2535;
+    --orange: #FB8500;
+    --cyan: #00d4ff;
+    --purple: #5A3EEF;
+    --green: #00e5a0;
+    --red: #ff4757;
+    --yellow: #ffd32a;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --card-r: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* LOADER */
+  #loader {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999;
+    gap: 16px;
+  }
+  .loader-ring {
+    width: 48px; height: 48px; border: 3px solid var(--border);
+    border-top-color: var(--orange); border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loader p { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  /* ERROR BANNER */
+  #error-banner {
+    display: none; background: #1a0a0a; border: 1px solid var(--red);
+    color: var(--red); padding: 12px 20px; border-radius: 8px; margin: 20px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  }
+
+  /* LAYOUT */
+  #app { display: none; }
+  header {
+    padding: 20px 28px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border); padding-bottom: 16px;
+  }
+  .logo { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--orange); letter-spacing: -0.5px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .last-update { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .refresh-btn {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+  }
+  .refresh-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  main { padding: 20px 28px; }
+
+  /* KPI ROW */
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--card-r); padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .kpi.purple-bg { background: #1a1240; border-color: var(--purple); }
+  .kpi.green-bg { background: #031a10; border-color: var(--green); }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; }
+  .kpi-value { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .kpi-value.orange { color: var(--orange); }
+  .kpi-value.cyan { color: var(--cyan); }
+  .kpi-value.red { color: var(--red); }
+  .kpi-value.purple { color: var(--purple); }
+  .kpi-value.green { color: var(--green); }
+
+  /* CHARTS ROW */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .chart-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--card-r); padding: 18px;
+  }
+  .chart-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+  .chart-wrap { position: relative; height: 200px; }
+
+  /* PRIORITY TABLE */
+  .priority-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--card-r); padding: 18px; margin-bottom: 20px;
+  }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 500; padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 10px; border-bottom: 1px solid #0f1420; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  .buyer-id { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+  .amount-cell { font-family: 'JetBrains Mono', monospace; font-weight: 500; color: var(--orange); }
+
+  /* KAM TABS */
+  .kam-section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 18px; margin-bottom: 20px; }
+  .kam-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .kam-tab {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+    padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .kam-tab.active { background: var(--orange); border-color: var(--orange); color: #000; font-weight: 600; }
+  .kam-tab:hover:not(.active) { border-color: var(--orange); color: var(--orange); }
+
+  /* KAM CONTENT */
+  .kam-content { display: none; }
+  .kam-content.active { display: block; }
+  .funnel-section { margin-bottom: 16px; }
+  .funnel-header {
+    display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+    background: var(--bg3); border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+  }
+  .funnel-label { font-size: 13px; font-weight: 600; }
+  .funnel-count {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    background: var(--bg); padding: 2px 8px; border-radius: 10px; color: var(--muted);
+  }
+  .funnel-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-info { background: var(--cyan); }
+  .dot-risk { background: var(--yellow); }
+  .dot-form { background: var(--purple); }
+  .dot-sig { background: var(--green); }
+
+  .buyer-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 6px;
+  }
+  .buyer-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .buyer-name { font-weight: 500; font-size: 13px; }
+  .buyer-merchant { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .buyer-amount { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--orange); }
+  .chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .chip {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .chip-sat { background: #2a1a00; color: var(--orange); border: 1px solid #4a3000; }
+  .chip-os { background: #0a1a2a; color: var(--cyan); border: 1px solid #0a3050; }
+  .chip-edc { background: #1a0a2a; color: #c084fc; border: 1px solid #3a1a5a; }
+  .chip-otros { background: #1a1a1a; color: var(--muted); border: 1px solid var(--border); }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .badge-ok { background: #031a10; color: var(--green); border: 1px solid #0a4a2a; }
+  .badge-pend { background: #1a1000; color: var(--yellow); border: 1px solid #4a3000; }
+  .doc-field { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+  .sig-link { font-size: 11px; color: var(--muted); margin-top: 4px; word-break: break-all; font-family: 'JetBrains Mono', monospace; }
+
+  .empty-state { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .charts-row { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-<div class="container">
-<div class="header"><div class="header-left"><h1>Dashboard Buyer Activation</h1><div class="subtitle"><span class="dot"></span>Seguimiento KAM y Pipeline — Semana 3 · 19 de Febrero 2026</div></div><div class="logo-mark">KONTEMPO</div></div>
-<div class="tabs"><div class="tab active" onclick="showTab('general',this)">Funnel General</div><div class="tab" onclick="showTab('kam',this)">Pestaña por KAM</div></div>
-<div id="general" class="tab-content active">
-<div class="kpi-grid" id="kpi-grid"></div>
-<div class="card" style="margin-bottom:16px;padding:20px 24px"><div class="card-title">Flujo del Funnel</div><div class="funnel-visual" id="funnel-visual"></div><div class="breakdown-grid" id="breakdown-grid"></div></div>
-<div class="two-col">
-<div class="card"><div class="card-title">Pending Information — Desglose por Documento</div><canvas id="docChart"></canvas></div>
-<div class="card"><div class="card-title">Priority Cards (&gt;200K, SAT Sí, NO Obligado)</div><table class="priority-table"><thead><tr><th>ID</th><th>Buyer</th><th>Requested Amount</th></tr></thead><tbody id="priority-list"></tbody></table></div>
+
+<div id="loader">
+  <div class="loader-ring"></div>
+  <p>Cargando pipeline desde Pipefy...</p>
 </div>
-<div class="card" style="margin-top:16px"><div class="card-title">Pipeline por KAM ($ MXN)</div><canvas id="kamChart" height="110"></canvas></div>
+
+<div id="error-banner"></div>
+
+<div id="app">
+  <header>
+    <div class="logo">Kontempo</div>
+    <div class="header-right">
+      <span class="last-update" id="last-update">—</span>
+      <button class="refresh-btn" onclick="loadData()">⟳ Actualizar</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- KPIs -->
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">Total Funnel</div>
+        <div class="kpi-value orange" id="kpi-total">—</div>
+        <div class="kpi-sub">buyers activos</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Pending Information</div>
+        <div class="kpi-value cyan" id="kpi-info">—</div>
+        <div class="kpi-sub">buyers</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Risk Interview</div>
+        <div class="kpi-value red" id="kpi-risk">—</div>
+        <div class="kpi-sub">buyers</div>
+      </div>
+      <div class="kpi purple-bg">
+        <div class="kpi-label">Pending Formalization</div>
+        <div class="kpi-value purple" id="kpi-form">—</div>
+        <div class="kpi-sub" id="kpi-form-amt">$ —</div>
+      </div>
+      <div class="kpi green-bg">
+        <div class="kpi-label">Pending Signature</div>
+        <div class="kpi-value green" id="kpi-sig">—</div>
+        <div class="kpi-sub" id="kpi-sig-amt">$ —</div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Pending Information — Desglose por Documento</div>
+        <div class="chart-wrap"><canvas id="chartDocs"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Pipeline por KAM ($ MXN)</div>
+        <div class="chart-wrap"><canvas id="chartKam"></canvas></div>
+      </div>
+    </div>
+
+    <!-- PRIORITY TABLE -->
+    <div class="priority-card">
+      <div class="section-title">Priority Cards (&gt;200K, SAT Sí, NO Obligado)</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Buyer ID</th>
+            <th>Buyer</th>
+            <th>Requested Amount</th>
+          </tr>
+        </thead>
+        <tbody id="priority-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- KAM TABS -->
+    <div class="kam-section">
+      <div class="section-title">Pipeline por KAM</div>
+      <div class="kam-tabs" id="kam-tabs"></div>
+      <div id="kam-contents"></div>
+    </div>
+  </main>
 </div>
-<div id="kam" class="tab-content"><div class="card"><div class="kam-select-wrap"><label>Filtrar por KAM</label><select id="kamSelect" onchange="renderKamView()"></select></div><div id="kamContent"></div></div></div>
-</div>
+
 <script>
-const data={"kpis": {"total": {"buyers": 220, "amount": 109833600}, "info": {"buyers": 153, "amount": 79728600}, "risk": {"buyers": 5, "amount": 11500000}, "form": {"buyers": 42, "amount": 11580000}, "sig": {"buyers": 20, "amount": 7025000}}, "pending_info_breakdown": {"sat_only": 92, "obligado_only": 16, "sat_and_obligado": 35, "edo_cuenta": 9, "otros": 1}, "priority_targets": [{"Buyer Account ID": "buy_6609358258.9401", "Título": "ANSA INGENIERIA - Saul Acosta Quintana", "Amount Requested": 2000000}, {"Buyer Account ID": "buy_6540866103.6265", "Título": "BIENES E INMUEBLES TRES PICOS - Alfredo Martinez De Leon", "Amount Requested": 3000000}, {"Buyer Account ID": "buy_7449770377.1972", "Título": "Electroconstrucciones luis ramos SA de CV - María Teresa  Lomeli Marquez", "Amount Requested": 500000}, {"Buyer Account ID": "buy_1742216649.3721", "Título": "equipos y servicios electricos de juarez - Martha Angelica Mendoza Grado", "Amount Requested": 500000}, {"Buyer Account ID": "buy_3413829994.5327", "Título": "Ferrod - Ivett Paola Aceves Rodríguez", "Amount Requested": 500000}, {"Buyer Account ID": "buy_2300878031.8527", "Título": "Gm Soluciones Audiovisuales - Miguel Angel  Hernandez  Martinez", "Amount Requested": 1700000}, {"Buyer Account ID": "buy_6540225318.7091", "Título": "IEV - Antonio Corzo Camberos", "Amount Requested": 300000}, {"Buyer Account ID": "buy_3085882875.3542", "Título": "Jose Juan Davila Alvarado", "Amount Requested": 250000}, {"Buyer Account ID": "buy_9175065665.5231", "Título": "Kiai Combat Sports - Jorge Alfaro Sainz", "Amount Requested": 500000}, {"Buyer Account ID": "buy_7465844389.9587", "Título": "Luisamelet Castro Montoya", "Amount Requested": 300000}, {"Buyer Account ID": "buy_2197505008.8781", "Título": "PEM - Alexis Octavio  Aguila Torres", "Amount Requested": 500000}, {"Buyer Account ID": "buy_2435124693.7046", "Título": "REMAQ - José Luis  Jasso  Fernández", "Amount Requested": 1000000}, {"Buyer Account ID": "buy_1596711225.9869", "Título": "ROPEC - Rodolfo Espinoza Castillo", "Amount Requested": 249000}, {"Buyer Account ID": "buy_7985723688.2854", "Título": "S POTLGT - Manuel  Raña  Pohls", "Amount Requested": 2000000}, {"Buyer Account ID": "buy_8001603752.4169", "Título": "WALAMITO - J. Felix Maldonado De La Paz", "Amount Requested": 2000000}], "kam_chart": {"labels": ["Benjamin Rodriguez Coronel", "Elizabeth Sanjuan", "Hector Oliveros", "Jorge Mendoza", "Lucy Alarcón"], "info": [22584000, 27521000, 3890000, 17413000, 8320600], "risk": [0, 3500000, 7000000, 0, 1000000], "form": [1440000, 6150000, 60000, 3130000, 800000], "sig": [1380000, 3095000, 200000, 350000, 2000000]}, "kam_details": {"Benjamin Rodriguez Coronel": {"info": [{"id": "buy_3654044253.7928", "title": "Alfonso Trujillo Valenzuela", "merch": "Construrama - Medina Ferreterias", "amt": 100000, "docs": "3 últimos estados de cuenta bancarios", "notes": ""}, {"id": "buy_6540866103.6265", "title": "BIENES E INMUEBLES TRES PICOS - Alfredo Martinez De Leon", "merch": "Blockera Regiomontana", "amt": 3000000, "docs": "Agregar un obligado solidario: bit.ly/Obligado-solidario, Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_2622166506.8565", "title": "CABO MANTENIMIENTO INTEGRAL - Omar  Rodriguez  Ceseña", "merch": "Construrama - Serdi", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4351701806.9826", "title": "CAHERZ SISTEMAS INTEGRALES - Lilia Govea Castillo", "merch": "Construrama - ACYMA", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1002970173.6551", "title": "Christian Augusto Hernandez Camporredondo", "merch": "Construrama - Cemento Cal y Fierro", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4045757550.7400", "title": "CODEPAC - Juan Luis  Mendiondo  Exposito", "merch": "Construrama - Aceros del Pacífico", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2455520303.3046", "title": "Constructora Makro - Wadih Kuri Rendon", "merch": "Comex - Baja Paint", "amt": 90000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5644241081.6537", "title": "David Coleman Ceseña", "merch": "Construrama - Aceros del Pacífico", "amt": 200000, "docs": "Agregar un obligado solidario: bit.ly/Obligado-solidario, Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2156787950.4729", "title": "DISTRIBUIDORA POLO SUR - Candy  Tamayo Panduro", "merch": "Construrama - Construnay", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6581024659.9942", "title": "Geovany Del Angel Noble Cantun", "merch": "Promexma", "amt": 285000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2054036612.8778", "title": "Ingenieria Aplicada al subsuelo - Aquiles Jorge Morales González", "merch": "Harmak", "amt": 2000000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat, Desglose de pasivos, Estados financieros de los últimos 2 ejercicios completos y 1 parcial reciente, Referencias comerciales", "notes": ""}, {"id": "buy_6708914322.3823", "title": "Irma De Los Angeles Blas", "merch": "Promexma", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1284670057.822", "title": "Jair De Jesus Martinez Navarro", "merch": "Comex - Baja Paint", "amt": 90000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5976433331.2840", "title": "JER CONSTRUCCIONES - Jose Eduardo Robles Rocha", "merch": "Construrama - Serdi", "amt": 250000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7274074117.9753", "title": "JIANXING CONSTRUCTION MEXICO MANAGEMENT  LTD CO - Yang Liu N/a", "merch": "Construrama Tonaltecas Valle Imperial", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9129029141.8615", "title": "Joel Varela Robles", "merch": "Promexma", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9534685249.9712", "title": "JOF DESARROLLOS Y CONSTRUCCION - Alberto Jorge Hernandez Rodiles", "merch": "MATERIALES AGREGADOS DE OCCIDENTE", "amt": 3000000, "docs": "3 últimos estados de cuenta bancarios, Desglose de pasivos, Estados financieros de los últimos 2 ejercicios completos y 1 parcial reciente", "notes": ""}, {"id": "buy_6630055571.5978", "title": "Jorge Antonio Godinez Lara", "merch": "Promexma", "amt": 350000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3085882875.3542", "title": "Jose Juan Davila Alvarado", "merch": "Promexma", "amt": 250000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_3793663160.9381", "title": "Jose Mario Cornejo Ramirez", "merch": "Construrama - Serdi", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_8054664741.843", "title": "Juan Ignacio Perez Gastelum", "merch": "Harmak", "amt": 5000000, "docs": "3 últimos estados de cuenta bancarios, Estados financieros de los últimos 2 ejercicios completos y 1 parcial reciente, Referencias comerciales", "notes": ""}, {"id": "buy_8337145137.6646", "title": "Juana Maria Guadalupe Jimenez Avila", "merch": "Promexma", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7465844389.9587", "title": "Luisamelet Castro Montoya", "merch": "Construrama - Aceros del Pacífico", "amt": 300000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_8436127297.7446", "title": "Manuel Montes Ruiz", "merch": "Construrama - Ferreteria Santana", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3807410105.6313", "title": "Marco Antonio Martinez Valdovinos", "merch": "Aceros y Complementos", "amt": 150000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7529837015.7995", "title": "Nataniel Villalobos Velasco", "merch": "Construrama Tonaltecas Valle Imperial", "amt": 700000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3494340866.7133", "title": "Omar Espino Pulido", "merch": "Promexma", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7121745643.9514", "title": "PROSEGSA - Ricardo Galvan Hernandez", "merch": "Electro Abastos", "amt": 80000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4838349301.2084", "title": "Raul Hiram Ibarra Martínez", "merch": "Ferreteria y Materiales Galvez", "amt": 400000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9146893971.1406", "title": "RECUBRIMIENTOS BLINDOTEX - Victor Enrique  Montoya  Avendaño", "merch": "Construrama - Ferreteria y Madereria San Benito", "amt": 2000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1596711225.9869", "title": "ROPEC - Rodolfo Espinoza Castillo", "merch": "Aceros y Complementos", "amt": 249000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_4784962967.1313", "title": "S & S CONCRETE SEALING EPOXI - Luis Rene Silva Valdivia", "merch": "Comex - TIS", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9792662929.6156", "title": "Servicios integrales construvida - José Arturo  Centeno  Alvarez", "merch": "Comex - TIS", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5032354091.7774", "title": "SLABTEC - Enrique Rivera Jiménez", "merch": "Ternium - ICCE", "amt": 600000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_8842588110.4627", "title": "Vectronix - José Antonio Gonzalez Villarreal", "merch": "Electro Abastos", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2598223112.841", "title": "Victorino Lopez Gamez", "merch": "Construrama - ACYMA", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}], "risk": [], "form": [{"id": "buy_9680830452.1954", "title": "AGRICOLA EL CARRICEL - Martin Alberto  Gastelum Garcia", "merch": "Construrama - Torke", "amt": 50000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Se manda aprobación 17 de febrero"}, {"id": "buy_8641142347.5312", "title": "Alfredo Alejandro De La Cruz Páez", "merch": "Promexma", "amt": 100000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses", "notes": "- Se manda aprobación el 17 de febrero"}, {"id": "buy_2746530834.3477", "title": "ALTHE - Victor Mauricio Anaya Avalos", "merch": "Aceros y Complementos", "amt": 250000, "docs": "Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push -26 de enero - no quiere compartir el comprobante de domicilio de O.S\n- Segundo -push 11 de febrero - sin éxito"}, {"id": "buy_2214549207.83", "title": "BCS CONSTRUCTION PROPERTY AND MANAGEMENT - Jackson  Fayette Handley", "merch": "Construrama - Ferreteria Santana", "amt": 190000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push - 11 de febrero - sin éxito"}, {"id": "buy_1349394243.3656", "title": "Coolfor - Alexis Aidier Baeza Chulim", "merch": "Coresa", "amt": 150000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push - 11 de febrero - sin éxito"}, {"id": "buy_2066343824.778", "title": "PRODUX - Rosaura Acosta Nevarez", "merch": "Construrama - Aceros del Pacífico", "amt": 100000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push - 4 de febrero - sin éxito \n- Segundo push - 11 de febrero - sin éxito"}, {"id": "buy_5159023241.7238", "title": "PROLIFICA - Rodrigo Lopez  Castaldi", "merch": "Promexma", "amt": 100000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push - 11 de febrero - sin éxito"}, {"id": "buy_7973957742.8300", "title": "RGV INSTALACIONES - Ricardo Garcia Valverde", "merch": "Construrama - Aceros del Pacífico", "amt": 200000, "docs": "CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses", "notes": "Se mando aprobación 13 de febrero."}, {"id": "buy_6110086511.2471", "title": "Zafig Arquitectura - Roberto  Zamora  Covarrubias", "merch": "Harmak", "amt": 300000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, Referencia PM: https://bit.ly/3ViopCS (debe ser alguien del equipo de finanzas, legal o contabiliadad)", "notes": "Primer push- 11 de febrero - sin éxito"}], "sig": [{"id": "buy_6446245644.8485", "title": "Aquileo Hernandez Romero", "merch": "Harmak", "amt": 100000, "link": "https://app.weetrust.mx/signatory/6993859e1b8b0d002622ef96/699385ca1b8b0d002622f148/1771275722150", "notes": "mandamos contrato 16 de febrero."}, {"id": "buy_1129079436.4675", "title": "Blas Antonio Angulo Espinoza", "merch": "Construrama - Torke", "amt": 60000, "link": "https://app.weetrust.mx/signatory/696ff88160d373002ae3b6ea/696ff8ff60d373002ae3bb74/1768945919231", "notes": "- Se hicieron los 3 push- el ultimo fue: \n27 de enero, sin éxito-"}, {"id": "buy_6906863248.9980", "title": "CONJEMA - Fidel Humberto  Madrid Mendoza", "merch": "Construrama - Humaya Maderera", "amt": 150000, "link": "FIDEL: https://app.weetrust.mx/signatory/6972a1b36b447a002b062324/6972a2826b447a002b062aac/1769120386208 // REYMUNDO:https://app.weetrust.mx/signatory/6972a1b36b447a002b062324/6972a2826b447a002b062aad/1769120386209", "notes": "- Primer push - 3 de febrero - sin éxito \n- Segundo push- 11 de febrero- en espera"}, {"id": "buy_6906863248.9980", "title": "CONJEMA - Fidel Humberto  Madrid Mendoza", "merch": "Construrama - Ferreteria y Madereria San Benito", "amt": 80000, "link": "FIDEL: https://app.weetrust.mx/signatory/696fc79c324293002a7122cc/696fc825324293002a712869/1768933413353 // REYMUNDO: https://app.weetrust.mx/signatory/696fc79c324293002a7122cc/696fc825324293002a71286a/1768933413354", "notes": "- Primer push - 9 de febrero - sin éxito \n- Segundo push- 12 de febrero - en espera de respuesta. ( estan de vacacionesl os firmantes)"}, {"id": "buy_1503118955.4042", "title": "EL CLAVO FERRETERIA SA DE CV - Antonio  Castro  Gutierrez", "merch": "Construrama - Aceros del Pacífico", "amt": 300000, "link": "https://app.weetrust.mx/signatory/6983e80b89cd7d002a52c61e/6983e85089cd7d002a52c756/1770252368237", "notes": "- Primer push - 9 de febrero - sin éxito \n- Segundo push - 12 de febrero - en espera de respuesta-\n- Tercer push  y último - 16 de febrero"}, {"id": "buy_6040752896.180", "title": "FYCCSA CONSTRUCTORA - Victor Manuel Castillo  Bautista", "merch": "Harmak", "amt": 300000, "link": "https://app.weetrust.mx/signatory/698f73725534d9001f3960a8/698f73ce5534d9001f3964b1/1771008974970", "notes": "- Primer push - 16 de febrero."}, {"id": "buy_3092625858.4848", "title": "Israel Sánchez Ramirez", "merch": "Construrama - HYMCA", "amt": 100000, "link": "https://app.weetrust.mx/signatory/6982afa3c7e301002abc2160/6982b037c7e301002abc23ba/1770921672710", "notes": "- Primer push - 12 de febrero - en espera de que conteste."}, {"id": "buy_6219572288.395", "title": "Luis Espinosa Ramos", "merch": "Aceros y Complementos", "amt": 100000, "link": "https://app.weetrust.mx/signatory/697a5ab03628a8002adb167b/697a5aee3628a8002adb1a08/1769626350563", "notes": "- Primer push 9 de febrero  - sin éxito \n- Segundo push 12 de febrero - en espera de respuesta"}, {"id": "buy_8838434147.7083", "title": "Maria Nava Leon", "merch": "Construrama - Torke", "amt": 90000, "link": "https://app.weetrust.mx/signatory/698b76e273d0a900267e0954/698b771573d0a900267e0d21/1770747669463", "notes": "- Primer push - 12 de febrero- en espera de contestación"}, {"id": "buy_3848649659.7447", "title": "Oralia Gil Galaviz", "merch": "Construrama - Torke", "amt": 100000, "link": "https://app.weetrust.mx/signatory/698ce6f70d40940029a0ec02/698ce7220d40940029a0ed59/1770841890121", "notes": "Mandamos contrato el 11 de febrero, en espera de firma"}]}, "Elizabeth Sanjuan": {"info": [{"id": "buy_5723066308.6859", "title": "Alma Alicia Calderón Rodriguez", "merch": "Construrama - Materiales el Centenario", "amt": 70000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9322544817.2615", "title": "ALOEORG - Arturo Valdez Villarreal", "merch": "Safety Store", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6609358258.9401", "title": "ANSA INGENIERIA - Saul Acosta Quintana", "merch": "Alta Tensión del Norte", "amt": 2000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_2199593148.3819", "title": "BLAM Energía Solar - Erick Andrés Aguirre Prieto", "merch": "Alta Tensión del Norte", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9183134820.599", "title": "COECISA - Arturo Alvarado Alvarez", "merch": "Construrama - Ferreteria La Nueva Victoria Rodeo", "amt": 200000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4114412209.4911", "title": "Comanosa - Alejandro  Garza  Suárez", "merch": "Aceros Escobedo", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3245919698.5019", "title": "Comercializadora shalom - Guillermo  González  Meza", "merch": "Jemiza Subestaciones y Tableros", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_8553830258.1800", "title": "Daniel Rodriguez Garay", "merch": "Construrama - Meny", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9216004516.5281", "title": "Edwin Estuario X Martinez", "merch": "Comex  - Huitzuco", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7449770377.1972", "title": "Electroconstrucciones luis ramos SA de CV - María Teresa  Lomeli Marquez", "merch": "Electrica Hidraulica Cabello", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_3867160501.2499", "title": "EMPRESAS HL - Alejandro Francisco Lozano Casas", "merch": "Electrica Hidraulica Cabello", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1742216649.3721", "title": "equipos y servicios electricos de juarez - Martha Angelica Mendoza Grado", "merch": "Alta Tensión del Norte", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_6960684209.4739", "title": "EQYAGRO - Humberto Ramon Montoya Samano", "merch": "Llantera Tapatía", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2370087427.4289", "title": "Erika Sotelo Vazquez", "merch": "Surtidora Ferretera", "amt": 100000, "docs": "3 últimos estados de cuenta bancarios", "notes": ""}, {"id": "buy_9288910261.2159", "title": "Eva Lorena Lopez Duran", "merch": "Alta Tensión del Norte", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7000242511.4096", "title": "FASEEL - Omar Ulises Medina Chacon", "merch": "Alta Tensión del Norte", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4465973119.6319", "title": "FAVA SOLDADORES - Faustino Valadez Chacon", "merch": "Construrama - Construblock", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6511609230.9377", "title": "Felipe De Jesus Alvarado Hoyos", "merch": "Solarever", "amt": 200000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4714423616.9488", "title": "Felix  Fernando Pérez Navarro", "merch": "Construrama - Donosti", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4211213774.7979", "title": "Fernando Alcocer Ochoa", "merch": "Alta Tensión del Norte", "amt": 700000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3413829994.5327", "title": "Ferrod - Ivett Paola Aceves Rodríguez", "merch": "Construrama - Distribuidora AMASA", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_9401276024.8229", "title": "Gabriel Garcia Muñoz", "merch": "Voltex Concretos", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6014717767.2476", "title": "Hans Michel Gonzalez", "merch": "Llantera Tapatía", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7696016414.3327", "title": "Héctor Efraín Bejar Flores", "merch": "Llantera Tapatía", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9897430069.9459", "title": "Hugo De Jesus Cervantes Vega", "merch": "Llantera Tapatía", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9789667410.2140", "title": "Hugo Francisco Coronado Lopez", "merch": "Construrama - Materiales el Centenario", "amt": 150000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1172662001.5913", "title": "IME INGENIERIA - Abrahan Sanchez Martinez", "merch": "Alta Tensión del Norte", "amt": 300000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7402328167.7388", "title": "J.antonio Cabriales Puente", "merch": "Construrama - Detodomat", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1033586013.4630", "title": "Jalie Valí Construcciones - Reyes Eduardo Esqueda Gonzalez", "merch": "Llantera Tapatía", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9379593936.3675", "title": "Jesús Rafael Nuñez Ceniceros", "merch": "Llantera Tapatía", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3340969539.6561", "title": "Jorge Enrique Castañeda Zavala", "merch": "Llantera Tapatía", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9245883539.1108", "title": "Jorge Luis Moreno Baruch", "merch": "Safety Store", "amt": 150000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6302216776.9937", "title": "Jorge Rodriguez Quezada", "merch": "Alta Tensión del Norte", "amt": 3000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6211194999.8266", "title": "Jose Agustin Pantoja Martinez", "merch": "Dimeint", "amt": 700000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5038963965.5316", "title": "José De Jesús González Orozco", "merch": "Llantera Tapatía", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1212371341.3056", "title": "Juan Gabriel Costeira Mayorga", "merch": "Llantera Tapatía", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4935510223.9920", "title": "Juan Pablo Valadez Villanueva", "merch": "Construrama - Materiales y Multiservicios Azteca", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4512853479.8568", "title": "LOGSTK - Martin Alonso Ochoa Esquivel", "merch": "Safety Store", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5573168864.97", "title": "Luis Antonio Peñaloza Torres", "merch": "Solarever", "amt": 100000, "docs": "3 últimos estados de cuenta bancarios", "notes": ""}, {"id": "buy_5176451112.5611", "title": "MAFA - Salvador  Loza  Lupercio", "merch": "Suministros Herbolarios y Químicos", "amt": 200000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3633589828.3868", "title": "MAGUS - Nazario Rodriguez Briseño", "merch": "Llantera Tapatía", "amt": 56000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6955180364.7413", "title": "Margarita Hernández Gutiérrez", "merch": "Llantera Tapatía", "amt": 150000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_8512535700.9227", "title": "moto tires san luis - Jesus Ortega Quezada", "merch": "Llantera Tapatía", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5945773803.6387", "title": "NUTRYPLUS - Abel Pavon  Olaya", "merch": "Suministros Herbolarios y Químicos", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7823071183.6238", "title": "Omar Pasquel García", "merch": "Rudel", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7704790080.3202", "title": "Paolo Alberoni Ceniceros Garcia", "merch": "Construrama - Construblock", "amt": 200000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2197505008.8781", "title": "PEM - Alexis Octavio  Aguila Torres", "merch": "Alta Tensión del Norte", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_5042296037.8296", "title": "Rigoberto Lujan Lopez", "merch": "Alta Tensión del Norte", "amt": 3000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6093619822.127", "title": "Rosevelt Rios Garcia", "merch": "Construrama - Materiales Cantu", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4619490220.866", "title": "SCALINI - Jorge Ladislao Trujillo Padilla", "merch": "Dimeint", "amt": 170000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4531609570.8061", "title": "SENSA ENERGIA - Javier Treviño Villarreal", "merch": "Electrica Hidraulica Cabello", "amt": 600000, "docs": "", "notes": ""}, {"id": "buy_8112987131.3390", "title": "SERMEP - Augusto  Champion  Almeida", "merch": "Alta Tensión del Norte", "amt": 5000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1632635148.1067", "title": "Servicios integrales Huitzin - Kevin Eduardo Mendoza  Hernandez", "merch": "Safety Store", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1115682030.8888", "title": "Sinergia Litografica - María Victoria  Díaz  Ballesteros", "merch": "Lumen", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7587143763.8591", "title": "SUMIDA - Angélica Estrada Terrones", "merch": "Safety Store", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5042626582.5103", "title": "TREGNOR - Jesus Gerardo De Anda Marquez", "merch": "Safety Store", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4757688951.2529", "title": "Yeseili Amairani Gonzalez Rojas", "merch": "Llantera Tapatía", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}], "risk": [{"id": "", "title": "ANCLAS MINERAS ENCINALES - Heracleo  Zuñiga Leyva", "merch": "Aceros Escobedo", "amt": 3000000, "tags": "Entrevista agendada", "notes": ""}, {"id": "", "title": "Jorge Rene Zepeda Navarro", "merch": "Surtidora Ferretera", "amt": 500000, "tags": "Entrevista agendada", "notes": ""}], "form": [{"id": "buy_1811588352.1859", "title": "Alberto Hernandez Saucedo", "merch": "Electrica Hidraulica Cabello", "amt": 55000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses", "notes": "- Se mando aprobación el 18 de febrero."}, {"id": "buy_9569537881.3048", "title": "Alberto Lopez Anaya", "merch": "Alta Tensión del Norte", "amt": 200000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, INE vigente por ambos lados del obligado solidario, Referencia PF: https://bit.ly/464wTUt (debe ser diferente al Obligado Solidario)", "notes": "Se mando mensaje de aprobación 10 de febrero, en espera de documentos"}, {"id": "buy_6633091060.1913", "title": "ESPECIALIDADES QUIMICAS DE MORELIA - Karina Rivera Giron", "merch": "Safety Store", "amt": 55000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "Primer push - 11 de febrero - sin éxito"}, {"id": "buy_5166552960.4790", "title": "ESTRUCTURAS Y OBRA CIVIL TORCA - Edgar Leonardo Ruelas De La Rosa", "merch": "Construrama - Distribuidora AMASA", "amt": 500000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses", "notes": "Push - 1 - 4 de febrero -Sin éxito\nPush - 2 - 11 de febrero - Sin éxito\nPus - 3 - 17 de febrero y ULTIMO PUSH!"}, {"id": "buy_5868561988.8622", "title": "FABRICANTE DE EQUIPO ELECTRICO NACIONAL - Fernando Fernandez Parra", "merch": "Dimeint", "amt": 300000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, INE vigente por ambos lados del acreditado, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio, Referencia PM: https://bit.ly/3ViopCS (debe ser alguien del equipo de finanzas, legal o contabiliadad)", "notes": "- Se manda aprobación 17 de febrero."}, {"id": "buy_8002058546.2662", "title": "GRUPO FLOW MANTENIMIENTOS INDUSTRIALES - Jose Rodrigo Flores Muñoz", "merch": "Alta Tensión del Norte", "amt": 100000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push - 11 de febrero - sin éxito"}, {"id": "buy_4992892347.1264", "title": "HUAMSA CONSTRUCTIVA - Jorge Humberto Rodriguez Garcia", "merch": "Construrama - SU-KASA LA FALCON", "amt": 150000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": ""}, {"id": "buy_4177667523.6303", "title": "INTELICAM - Susana Elena Ortega Cervantes", "merch": "Alta Tensión del Norte", "amt": 1500000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, INE vigente por ambos lados del obligado solidario, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio, Referencia PM: https://bit.ly/3ViopCS (debe ser alguien del equipo de finanzas, legal o contabiliadad)", "notes": "- Se manda aprobación 17 de febrero."}, {"id": "buy_6029609599.4894", "title": "Jose Rodrigo Flores Muñoz", "merch": "Alta Tensión del Norte", "amt": 100000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses", "notes": "- Primer push - 30 de enero - sin éxito \n- Segundo push - 11 de febrero - sin éxito"}, {"id": "buy_8452194326.4334", "title": "Juan Luis Nava Camacho", "merch": "Kontempo Construtienda", "amt": 400000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, INE vigente por ambos lados del obligado solidario, Referencia PF: https://bit.ly/464wTUt (debe ser diferente al Obligado Solidario)", "notes": "Push 1 - 4 de febrero - sin éxito \nPush 2 - 11 de febrero - sin éxito\nPush 3- 17 de febrero - sin éxito ULTIMO PUSH"}, {"id": "buy_6682979741.6669", "title": "Octavio Villezcas Colmenero", "merch": "Alta Tensión del Norte", "amt": 400000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, INE vigente por ambos lados del obligado solidario, Referencia PF: https://bit.ly/464wTUt (debe ser diferente al Obligado Solidario)", "notes": "Se mando aprobación 18 de febrero"}, {"id": "buy_7411060003.6468", "title": "Oscar Alberto Irigoyen Sotelo", "merch": "Alta Tensión del Norte", "amt": 600000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, INE vigente por ambos lados del obligado solidario, Referencia PF: https://bit.ly/464wTUt (debe ser diferente al Obligado Solidario)", "notes": "- Se mando aprobación el 16 de febrero."}, {"id": "buy_1061861685.905", "title": "PARA TI MI CASA FERREMATERIALES - Maria Silvia  Borjas  Castillo", "merch": "Rudel", "amt": 190000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer Push - 11 de febrero - sin éxito"}, {"id": "buy_2828947372.1673", "title": "Pedro Sanchez Diaz", "merch": "Alta Tensión del Norte", "amt": 350000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, INE vigente por ambos lados del obligado solidario, Referencia PF: https://bit.ly/464wTUt (debe ser diferente al Obligado Solidario)", "notes": "- Se manda aprobación, el 16 de febrero."}, {"id": "buy_5205021785.9462", "title": "RIEGOS LA CIMA - Gordon Dueck Plett", "merch": "Alta Tensión del Norte", "amt": 350000, "docs": "RPPC - Registro Público de la Propiedad y Comercio, Referencia PM: https://bit.ly/3ViopCS (debe ser alguien del equipo de finanzas, legal o contabiliadad)", "notes": "Push 1 - 4 de febrero - Sin éxito! \nPush 2 - 11 de febrero - Sin éxito! \nPush 3 - 17 de febrero - Sin éxito!  ULTIMO PUSH"}, {"id": "buy_4181625981.7062", "title": "Rodolfo Mijares Vasquez", "merch": "Llantera Tapatía", "amt": 200000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses", "notes": "Se mando aprobación el 18 de febrero"}, {"id": "buy_3565374670.4010", "title": "Success - William Paul  Mc Lane Galvan", "merch": "Suministros Herbolarios y Químicos", "amt": 200000, "docs": "RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push- 4 de febrero - sin éxito\n- Segundo push - 11 de febrero - sin éxito"}, {"id": "buy_3139208472.1270", "title": "Walter Antonio Quezada Sosa", "merch": "Alta Tensión del Norte", "amt": 500000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, Correo del obligado solidario, INE vigente por ambos lados del obligado solidario, Referencia PF: https://bit.ly/464wTUt (debe ser diferente al Obligado Solidario)", "notes": "- Se mando aprobación el 18 de febrero"}], "sig": [{"id": "buy_9374358552.3884", "title": "Carlos Francisco García Coronado", "merch": "Construrama - Materiales Vallejo", "amt": 195000, "link": "https://app.weetrust.mx/signatory/697a55153628a8002adadcf1/697a55523628a8002adadf78/1769624914383", "notes": "- Primer push- 3 de febrero - sin éxito \n- Segundo push - 12 de febrero- esperando respuesta"}, {"id": "buy_9947743915.4012", "title": "Emanuel Reveles Correa", "merch": "Alta Tensión del Norte", "amt": 500000, "link": "EMANUEL: https://app.weetrust.mx/signatory/6996081e865519002a708987/6996087c865519002a708de5/1771440252183 // JOSE: https://app.weetrust.mx/signatory/6996081e865519002a708987/6996087c865519002a708de6/1771440252184", "notes": "Se manda 11 de febrero notificación de aprobación de crédito, en espera de documentos."}, {"id": "buy_5175136738.7575", "title": "ICEL - David Vargas  Mireles", "merch": "Alta Tensión del Norte", "amt": 2000000, "link": "https://app.weetrust.mx/signatory/6994ce9373e141002aa555a9/6994ced673e141002aa55864/1771359958735", "notes": "- Mandamos contrato 17 de febrero"}, {"id": "buy_6905945789.1281", "title": "Josafat Ramon Muñoz Escobedo", "merch": "Electrica Hidraulica Cabello", "amt": 200000, "link": "Josafat: https://app.weetrust.mx/signatory/698f8a305534d9001f3a4b8e/698f8b295534d9001f3a5489/1771014953950 // Carlos: https://app.weetrust.mx/signatory/698f8a305534d9001f3a4b8e/698f8b295534d9001f3a548a/1771014953950", "notes": "- Se mando 11 de febrero, mensaje de aprobación de crédito esperando documentos."}, {"id": "buy_7943194347.393", "title": "Nestor Alberto Pérez Gallardo", "merch": "Construrama - Construblock", "amt": 200000, "link": "NESTOR: https://app.weetrust.mx/signatory/6984ff73c5d08a002adc7b21/6984ffbbc5d08a002adc7e01/1770323899593 // PATRICIA: https://app.weetrust.mx/signatory/6984ff73c5d08a002adc7b21/6984ffbbc5d08a002adc7e01/1770323899593", "notes": "- Primer push- 12 de febrero - solo hace falta la firma de nestor."}]}, "Hector Oliveros": {"info": [{"id": "buy_2300878031.8527", "title": "Gm Soluciones Audiovisuales - Miguel Angel  Hernandez  Martinez", "merch": "Studio Led", "amt": 1700000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_8948032918.4728", "title": "LAMSER SOLUCIONES INDUSTRIALES - Andres  Lara  Compean", "merch": "Comex - Cygnetek Suministros y Servicios", "amt": 190000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7985723688.2854", "title": "S POTLGT - Manuel  Raña  Pohls", "merch": "Studio Led", "amt": 2000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}], "risk": [{"id": "", "title": "ADESOFT - Miguel Angel  Barcenas  Manzo", "merch": "Studio Led", "amt": 2000000, "tags": "Entrevista agendada", "notes": ""}, {"id": "", "title": "QROCOM - Xavier Barrera García De León", "merch": "Studio Led", "amt": 5000000, "tags": "Entrevista agendada", "notes": ""}], "form": [{"id": "buy_6640913992.9068", "title": "Jose Roberto Sandoval Gutierrez", "merch": "Construrama - Materiales Caballero", "amt": 60000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses", "notes": "- Primer push - 11 de febrero - sin éxito"}], "sig": [{"id": "buy_5393623535.1867", "title": "La casa de toño - Maria Del Carmen Flores Godinez", "merch": "Construrama - AM", "amt": 200000, "link": "https://app.weetrust.mx/signatory/698deffd0d40940029a4ee84/698df04e0d40940029a4f164/1770909774386", "notes": "Se manda contrato 12 de febrero, en espera de que firme"}]}, "Jorge Mendoza": {"info": [{"id": "buy_9371988541.6517", "title": "AG MORGAN - María Georgina  Morgan  Paredes", "merch": "Construrama - Obrek", "amt": 199000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1221283738.1210", "title": "Aldo Refugio Villalobos Sanchez", "merch": "Importep", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4787187654.5642", "title": "Alejandro Macias Torres", "merch": "Import Treads", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7319976758.5911", "title": "Alfredo Hernandez Davila", "merch": "Importep", "amt": 90000, "docs": "3 últimos estados de cuenta bancarios", "notes": ""}, {"id": "buy_1907931050.4920", "title": "bjr servicios y suministros industriales - Jesus Guadalupe Pereyra Olan", "merch": "Mersol Sureste", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5527200455.1286", "title": "Brillaldo Enrique Serra Gargia", "merch": "Mersol Sureste", "amt": 60000, "docs": "3 últimos estados de cuenta bancarios", "notes": ""}, {"id": "buy_1417566802.9128", "title": "Conpac - Rausel Marcial Garcia", "merch": "Resurtidora de Aire y Calefacción", "amt": 400000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3747389106.2231", "title": "Constructora.Kasamar - René Armando Barron Rodriguez", "merch": "Construrama - Obrek", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2438315802.5567", "title": "Daniel Barraza Rosales", "merch": "Importep", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9251547996.3677", "title": "David Alejandro Fuentes Torres", "merch": "ECOCLIMAS", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3261603655.8348", "title": "Eligio Villa Vargas", "merch": "Resurtidora de Aire y Calefacción", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4727363556.6912", "title": "Emilio Falcon Mota", "merch": "Import Treads", "amt": 200000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9189697698.9524", "title": "Francisco Javier Barrera Hernández", "merch": "Radial Pros", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9339043196.923", "title": "HAVEN RIVIERA CANCUN - Gabriel Ballester Parets", "merch": "Construrama - Obrek", "amt": 150000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7611209394.8202", "title": "Henry Jesus Perez Sarabia", "merch": "Radial Pros", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6540225318.7091", "title": "IEV - Antonio Corzo Camberos", "merch": "XE Seguridad", "amt": 300000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_3687567061.6250", "title": "INTERBIT DISTRIBUCION DE TECNOLOGIA Y CONTENIDO DIGITAL - Edgar  Ochoa Bañuelos", "merch": "Rac Llantas", "amt": 3000000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9106181945.6300", "title": "Jesús Alberto Hernández Cardona", "merch": "Importep", "amt": 199000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1960031354.7502", "title": "Joel Flores Poot", "merch": "Radial Pros", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5592879590.5826", "title": "Jose Antonio Beltrán Beltrán", "merch": "ECOCLIMAS", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6410052281.8707", "title": "José Luis Ávila Arellano", "merch": "Importep", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9002516213.2529", "title": "José Ramirez Villa", "merch": "Úrbita", "amt": 5000000, "docs": "3 últimos estados de cuenta bancarios", "notes": ""}, {"id": "buy_8060493258.213", "title": "Luis Domingo Jimenez Jolivares", "merch": "Mersol Sureste", "amt": 350000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4937449439.7500", "title": "Manuel Vazquez Contreras", "merch": "Radial Pros", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3430016637.5473", "title": "María Vicenta Del Rosario De La Rosa Cruz", "merch": "Construrama - Obrek", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2561524471.4287", "title": "MCR PROYECTOS Y DESARROLLOS - Jose Antonio Morales Greene", "merch": "Comex - Pinturen", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7675331214.1181", "title": "NEO - Gerardo  Mora  Gaspar", "merch": "Resurtidora de Aire y Calefacción", "amt": 1000000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5851643564.9128", "title": "Oilmex Energy - Gina Gabriela Fragozo Marin", "merch": "Mersol Sureste", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4172043907.6937", "title": "Omar Cecilio Alvarado Ramos", "merch": "Radial Pros", "amt": 300000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2435124693.7046", "title": "REMAQ - José Luis  Jasso  Fernández", "merch": "Úrbita", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_6438994826.7995", "title": "RENTIUX - Eduardo Aguilera Cifuentes", "merch": "Construrama - Mt Del Toro", "amt": 200000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_8001603752.4169", "title": "WALAMITO - J. Felix Maldonado De La Paz", "merch": "Úrbita", "amt": 2000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}], "risk": [], "form": [{"id": "buy_4705857072.2682", "title": "Alondra Domínguez Herrera", "merch": "Construrama - Tubos y Conexiones Del Golfo", "amt": 70000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses", "notes": "- Mandamos a aprobación el 16 de febrero."}, {"id": "buy_1343883835.8622", "title": "AUTOBUSES URBANOS DE VALLE DE SANTIAGO SA DE CV - Maria Carmen Aida Grandos  Guzman", "merch": "Importep", "amt": 150000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push - 19 de febrero"}, {"id": "buy_7081901451.6576", "title": "comercializadora industrial de los angeles de los angeles sa de cv - Patricia  Gonzalez Palacios", "merch": "Construrama - SICLESA", "amt": 60000, "docs": "CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses", "notes": "se mando aprobación el día de 11 de febrero en espera de documentos."}, {"id": "buy_2558675151.9527", "title": "CORPORATIVO JOGLAR - Juan José  Granda Pastrana", "merch": "Construrama - ACSA", "amt": 200000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Primer push - 11 de febrero - sin éxito."}, {"id": "buy_2990105009.1670", "title": "CORPORATIVO KU RICARDEZ S.A. DE C.V. - Abril Bautista Ku  Chan", "merch": "Úrbita", "amt": 700000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, Referencia PM: https://bit.ly/3ViopCS (debe ser alguien del equipo de finanzas, legal o contabiliadad)", "notes": "- Primer Push 3 de febrero - Sin éxito \n- Segundo Pus 11 de Febréro- Sin éxito\n- Tercer y ultimo  Push - 17 de Febrero - sin éxito"}, {"id": "buy_5888392291.7479", "title": "Enrique Mares Raygoza", "merch": "Importep", "amt": 150000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses", "notes": "- Mandamos aprobación  el 17 de febrero."}, {"id": "buy_5492602126.1069", "title": "Fine Pitch de México - Alejandro  Garza  Hibler", "merch": "Jungo", "amt": 600000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, Correo del Rep. Legal, INE vigente por ambos lados del obligado solidario, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio, Referencia PM: https://bit.ly/3ViopCS (debe ser alguien del equipo de finanzas, legal o contabiliadad), Teléfono celular del Rep. Legal", "notes": ""}, {"id": "buy_7270635888.8079", "title": "Freddy De La Cruz Garcia", "merch": "Mersol Sureste", "amt": 100000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses", "notes": "- Se manda aprobación, el 17 de febrero."}, {"id": "buy_9937132541.8793", "title": "GLOBAL SOLUTIONS - Brando Maza Correa", "merch": "Construrama - Obrek", "amt": 300000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, Correo del Rep. Legal, INE vigente por ambos lados del obligado solidario, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio, Referencia PM: https://bit.ly/3ViopCS (debe ser alguien del equipo de finanzas, legal o contabiliadad), Teléfono celular del Rep. Legal", "notes": "- Primer push - 17 de febrero -"}, {"id": "buy_7196056109.3556", "title": "MAYUCSA - Carlos De Jesus Gongora  Peniche", "merch": "Construrama - Obrek", "amt": 500000, "docs": "Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses", "notes": "- Primer Push 3 de febrero- Sin éxito\n- Segundo Push 11 de febrero -Sin éxito}\n- Tercer Push 17 de febrero - sin éxito ULTIMO PUSH"}, {"id": "buy_2443932168.6404", "title": "Minimal Estudio - Antonio Reynoso Molet", "merch": "Comex - Pinturen", "amt": 200000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Se manda aprobación 18 de febrero"}, {"id": "buy_2530766238.5218", "title": "Tappan Desarrolladora - Arturo  Tappan  Silverira", "merch": "Construrama - Obrek", "amt": 100000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio", "notes": "- Se mando aprobación el 17 de febrero."}], "sig": [{"id": "buy_6824877916.493", "title": "FCG INCOSUR - Freddy De La Cruz Garcia", "merch": "Mersol Sureste", "amt": 100000, "link": "https://app.weetrust.mx/signatory/69962116171744002a57b1fe/69962181171744002a57b7e2/1771446657811", "notes": "- Se manda aprobación de 17 de febrero"}, {"id": "buy_4342764218.3480", "title": "Lilia Mendoza Sandoval", "merch": "Úrbita", "amt": 250000, "link": "LILIA: https://app.weetrust.mx/signatory/69825e2474d3b7002a43272e/69825e8474d3b7002a432b1b/1770151556333 // ANGEL: https://app.weetrust.mx/signatory/69825e2474d3b7002a43272e/69825e8474d3b7002a432b1c/1770151556334", "notes": "- Primer push 12 de febrero - en espera de que conteste. \n- Segundo push 16 de febrero - en espera de comentarios."}]}, "Lucy Alarcón": {"info": [{"id": "buy_5601080853.9513", "title": "ACEROS CAMESA - Constantino Gonzalez Gomez", "merch": "Phasa", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7353109049.2508", "title": "Alma Delia Morales Carrillo", "merch": "Construrama - San Juan", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_8224724232.2949", "title": "AZPro Iluminacion y Consumibles - Alejandra  Ferraez Mariño", "merch": "Phasa", "amt": 200000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7622670908.4126", "title": "Cecilia Jiménez Martínez", "merch": "Construrama- Materiales Lindavista", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4660588443.115", "title": "CODEVSA - Fernando Montes  Vazquez", "merch": "Concretos Baja Nor de Mexicali", "amt": 300000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6997188235.7622", "title": "Gabriela Abigail Velasco Reyes", "merch": "Construrama - AM", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7519982916.5940", "title": "Guillermo Antonio Lopez Lopez", "merch": "Construrama- Materiales Lindavista", "amt": 70000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2007564954.8244", "title": "Héctor Jonnathan Tostado Pérez", "merch": "Nos mueve el sol", "amt": 80000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_6300556944.8617", "title": "Hortencia Velazquez Arenas", "merch": "Construrama - Materiales para la Construcción Casa Cerezo", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_1367677626.9435", "title": "ITZAES TECNOLOGÍAS ENERGÉTICAS - Jorge Arturo Del Ángel  Ramos", "merch": "Nos mueve el sol", "amt": 1000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_2264266964.5236", "title": "Juan Carlos Vazquez Sandoval", "merch": "Construrama- Materiales Lindavista", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4468481039.2957", "title": "Juan Gerardo Álvarez Diaz", "merch": "Construrama- Materiales Lindavista", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9175065665.5231", "title": "Kiai Combat Sports - Jorge Alfaro Sainz", "merch": "Tu Compa", "amt": 500000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym", "notes": ""}, {"id": "buy_6575505101.2989", "title": "Luis Felipe Olvera Montaño", "merch": "Construrama - Gonzalez", "amt": 2000000, "docs": "Autorización de consulta en Buró // Comparte este link a TU OBLIGADO SOLIDARIO REGISTRADO (PF): bit.ly/43QUMym, Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4995911332.7073", "title": "Luis Osbaldo Hernandez Cortez", "merch": "Construrama - Materiales el Constructor", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7843220713.2997", "title": "Mario Israel Becerra Gutierréz", "merch": "Grupo AVE", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5991272716.3091", "title": "Materiales   ARIZVA sa de cv - Adriana Aritzmendi Vargas", "merch": "Kontempo", "amt": 1000000, "docs": "3 últimos estados de cuenta bancarios, Estados financieros de los últimos 2 ejercicios completos y 1 parcial reciente", "notes": ""}, {"id": "buy_4317130169.3499", "title": "Miguel Angel Larios Jimenez", "merch": "Construrama - Materiales el Constructor", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3178650529.4240", "title": "MIP MÁQUINAS INDUSTRIALES PEÑA - Yanet Rosas  Hernández", "merch": "Phasa", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_8762139116.6625", "title": "Moises Carmona Ojeda", "merch": "Construrama- Materiales Lindavista", "amt": 60000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_3106608157.7550", "title": "Paulina Moreno Montealegre", "merch": "Construrama - Materiales el Constructor", "amt": 55000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_4539457678.4585", "title": "PLASTICOS Y RESINAS TRES RIOS - Ruben Castañeda Urias", "merch": "Phasa", "amt": 100000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_9996566219.1235", "title": "Ricardo Andres Ramirez Cortes", "merch": "Grupo AVE", "amt": 150000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_5327377230.7657", "title": "Roberto Gallegos Lira", "merch": "Construrama- Materiales Lindavista", "amt": 55600, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}, {"id": "buy_7372961422.8044", "title": "TECHADOS Y RECICLADOS VOT - Gustavo Fidel Rojas Hernandez", "merch": "Comex - Moisés Achar Tussie", "amt": 2000000, "docs": "Conexión del historial de facturación a tráves del enlace: tools.kontempo.io/sat", "notes": ""}], "risk": [{"id": "", "title": "SEGUPIE - Carlos  Limon Hernandez", "merch": "ProWear", "amt": 1000000, "tags": "Entrevista agendada", "notes": ""}], "form": [{"id": "buy_9686933539.8710", "title": "Cabo & Home - Fernando Robles Contreras", "merch": "Construrama - Comercializadora JyT", "amt": 600000, "docs": "Acta Constitutiva, Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del acreditado no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, Correo del Rep. Legal, INE vigente por ambos lados del obligado solidario, Poderes notariales del representante legal con facultades para suscribir títulos y créditos, RPPC - Registro Público de la Propiedad y Comercio, Referencia PM: https://bit.ly/3ViopCS (debe ser alguien del equipo de finanzas, legal o contabiliadad), Teléfono celular del Rep. Legal", "notes": "- Me mando aprobación el 18 de febrero."}, {"id": "buy_5286854796.6873", "title": "Sofia Esmeralda Ayala Ibarra", "merch": "Grupo AVE", "amt": 200000, "docs": "Beneficiario Controlador: https://bit.ly/47KtY4u, CSF - Constancia de Situación Fiscal del Obligado Solidario no mayor a 3 meses, CSF - Constancia de Situación Fiscal no mayor a 3 meses, Comprobante de Domicilio al nombre del obligado solidario no mayor a 3 meses, INE vigente por ambos lados del obligado solidario, Referencia PF: https://bit.ly/464wTUt (debe ser diferente al Obligado Solidario)", "notes": "- Se mando, aprobación el 16 de febrero"}], "sig": [{"id": "buy_2157763044.1083", "title": "ESTRUCTURAS Y MONTAJES DE BAJA CALIFORNIA - Jose Meliton Orozco  Alatorre", "merch": "Concretos Baja Nor de Mexicali", "amt": 1500000, "link": "JOSE MELITON: https://app.weetrust.mx/signatory/69867424d3b51c0029dc781b/6986745fd3b51c0029dc7b75/1770419295841 // JOSE CASAS: https://app.weetrust.mx/signatory/69867424d3b51c0029dc781b/6986745fd3b51c0029dc7b76/1770419295842", "notes": "- Primer push - 11 febrero - pendiente firmas! \n- Segundo push - 16 de febrero - pendiente ambas firmas"}, {"id": "buy_5869615239.4354", "title": "JOLSO CONSTRUCTORA INDUSTRIAL - Alfonso Nogueda Berdeja", "merch": "Concretos Baja Nor de Mexicali", "amt": 500000, "link": "ALFONSO: https://app.weetrust.mx/signatory/698cc23f13182d0026cf8d0e/698cc2c413182d0026cf9458/1770832580966 // JOSE: https://app.weetrust.mx/signatory/698cc23f13182d0026cf8d0e/698cc2c413182d0026cf9459/1770832580967", "notes": "- Ya firmo contrato, pero no ha agregado referencia, pendiente de que agregue referencia - 12 de febrero."}]}}};
-function showTab(id,el){document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');el.classList.add('active')}
-function fmtCur(n){return '$'+n.toLocaleString('es-MX',{maximumFractionDigits:0})}
-function fmtShort(n){if(n>=1e6)return '$'+(n/1e6).toFixed(1)+'M';if(n>=1e3)return '$'+(n/1e3).toFixed(0)+'K';return '$'+n}
-const kd=[{t:"Total Funnel CX",v:data.kpis.total.buyers,a:data.kpis.total.amount,c:"total"},{t:"Pending Information",v:data.kpis.info.buyers,a:data.kpis.info.amount,c:"info"},{t:"Risk Interview",v:data.kpis.risk.buyers,a:data.kpis.risk.amount,c:"risk"},{t:"Pending Formalization",v:data.kpis.form.buyers,a:data.kpis.form.amount,c:"form"},{t:"Pending Signature",v:data.kpis.sig.buyers,a:data.kpis.sig.amount,c:"sig"}];
-const kg=document.getElementById('kpi-grid');
-kd.forEach(k=>{const al=(k.c==='form'||k.c==='sig')?'Approved Amount: ':'';kg.innerHTML+=`<div class="kpi-card ${k.c}"><div class="kpi-label">${k.t}</div><div class="kpi-value">${k.v} <span style="font-size:.85rem;color:var(--text-secondary);font-weight:500">buyers</span></div><div class="kpi-amount">${al}${fmtCur(k.a)}</div></div>`});
-const fd=[{label:"Information",value:data.kpis.info.buyers,color:"var(--naranja)"},{label:"Interview",value:data.kpis.risk.buyers,color:"var(--cyan)"},{label:"Formalization Documents",value:data.kpis.form.buyers,color:"var(--morado)"},{label:"Signature",value:data.kpis.sig.buyers,color:"var(--verde)"}];
-const mxF=Math.max(...fd.map(f=>f.value));const fEl=document.getElementById('funnel-visual');
-fd.forEach((f,i)=>{fEl.innerHTML+=`${i>0?'<div class="funnel-arrow">→</div>':''}<div class="funnel-stage"><div class="funnel-bar"><div class="funnel-bar-fill" style="width:${f.value/mxF*100}%;background:${f.color}"></div></div><div class="funnel-stage-value" style="color:${f.color}">${f.value}</div><div class="funnel-stage-label">${f.label}</div></div>`});
-const bd=data.pending_info_breakdown;const bEl=document.getElementById('breakdown-grid');
-[{l:"Falta SAT",v:bd.sat_only,cl:"var(--naranja)"},{l:"Falta Obligado Solidario",v:bd.obligado_only,cl:"var(--morado)"},{l:"Falta SAT + Obligado",v:bd.sat_and_obligado,cl:"var(--rojo)"},{l:"Falta Edo. de Cuenta / Otros",v:bd.edo_cuenta+bd.otros,cl:"var(--cyan)"}].forEach(c=>{bEl.innerHTML+=`<div class="breakdown-chip"><div class="chip-value" style="color:${c.cl}">${c.v}</div><div class="chip-label">${c.l}</div></div>`});
-const pL=document.getElementById('priority-list');
-data.priority_targets.sort((a,b)=>b['Amount Requested']-a['Amount Requested']);
-data.priority_targets.forEach(p=>{pL.innerHTML+=`<tr><td class="id-cell">${p['Buyer Account ID']}</td><td>${p['Título']}</td><td class="amount-cell">${fmtCur(p['Amount Requested'])}</td></tr>`});
-Chart.defaults.color='#94a3b8';Chart.defaults.borderColor='rgba(30,39,64,.5)';Chart.defaults.font.family="'DM Sans',sans-serif";
-new Chart(document.getElementById('docChart'),{type:'bar',data:{labels:['Falta SAT','Falta SAT + OS','Falta Obligado Solidario','Falta Edo. Cuenta','Otros'],datasets:[{data:[bd.sat_only,bd.sat_and_obligado,bd.obligado_only,bd.edo_cuenta,bd.otros],backgroundColor:['#f97316','#ef4444','#8b5cf6','#06b6d4','#64748b'],borderRadius:6,barThickness:28}]},options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e293b',titleColor:'#f0f2f5',bodyColor:'#94a3b8',borderColor:'#334155',borderWidth:1,cornerRadius:8,padding:12}},scales:{x:{grid:{color:'rgba(30,39,64,.3)'},ticks:{font:{family:"'JetBrains Mono'"}}},y:{grid:{display:false}}}}});
-new Chart(document.getElementById('kamChart'),{type:'bar',data:{labels:data.kam_chart.labels.map(l=>l.trim()),datasets:[{label:'Info',data:data.kam_chart.info,backgroundColor:'#f97316',borderRadius:4},{label:'Risk',data:data.kam_chart.risk,backgroundColor:'#06b6d4',borderRadius:4},{label:'Form',data:data.kam_chart.form,backgroundColor:'#8b5cf6',borderRadius:4},{label:'Sig',data:data.kam_chart.sig,backgroundColor:'#10b981',borderRadius:4}]},options:{plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{size:12}}},tooltip:{backgroundColor:'#1e293b',titleColor:'#f0f2f5',bodyColor:'#94a3b8',borderColor:'#334155',borderWidth:1,cornerRadius:8,padding:12,callbacks:{label:ctx=>ctx.dataset.label+': '+fmtCur(ctx.raw)}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'rgba(30,39,64,.3)'},ticks:{callback:v=>fmtShort(v),font:{family:"'JetBrains Mono'"}}}}}});
-const sel=document.getElementById('kamSelect');sel.innerHTML='<option value="">Selecciona un KAM...</option>';
-data.kam_chart.labels.forEach(k=>sel.innerHTML+=`<option value="${k}">${k.trim()}</option>`);
-const sC={info:'#f97316',risk:'#06b6d4',form:'#8b5cf6',sig:'#10b981'};
-const sN={sig:'1. Pending Signature',form:'2. Pending Formalization Documents',risk:'3. Risk Interview',info:'4. Pending Information'};
-function renderKamView(){
-const kam=sel.value;const cont=document.getElementById('kamContent');
-if(!kam){cont.innerHTML='';return}
-const d=data.kam_details[kam];if(!d){cont.innerHTML='<p style="color:var(--text-muted)">No hay datos.</p>';return}
-let h='';
-['sig','form','risk','info'].forEach(st=>{
-const rows=d[st];if(!rows||!rows.length)return;
-let tot=0;let gr={};rows.forEach(r=>{if(!gr[r.merch])gr[r.merch]=[];gr[r.merch].push(r);tot+=r.amt});
-h+=`<div class="stage-section"><div class="stage-header"><div class="stage-indicator" style="background:${sC[st]}"></div><h3>${sN[st]}</h3><span style="margin-left:auto;font-family:'JetBrains Mono';font-size:.82rem;color:${sC[st]}">${rows.length} buyers</span></div>`;
-h+=`<table class="detail-table"><thead><tr><th>Merchant</th><th>Buyer</th><th>Monto</th><th>Detalle</th><th>Notas</th></tr></thead><tbody>`;
-for(let m in gr){h+=`<tr class="group-row"><td colspan="5">${m}</td></tr>`;
-gr[m].forEach(r=>{let det='';
-if(st==='info')det=`<span class="doc-detail">${r.docs||''}</span>`;
-if(st==='risk')det=r.tags==='Entrevista agendada'?'<span class="entrevista-badge">✓ Entrevista agendada</span>':'<span class="pendiente-badge">⏳ Pendiente</span>';
-if(st==='form')det=`<span class="doc-detail">${r.docs||''}</span>`;
-if(st==='sig')det=`<span class="link-text">${r.link||''}</span>`;
-let nt=r.notes&&r.notes!==''?r.notes:'—';
-h+=`<tr><td></td><td><span class="buyer-id">${r.id||''}</span><br><span class="buyer-name">${r.title}</span></td><td class="amount-cell" style="color:${sC[st]}">${fmtCur(r.amt)}</td><td>${det}</td><td style="font-size:.75rem;color:var(--text-secondary)">${nt}</td></tr>`})}
-h+=`</tbody></table><div class="stage-total-bar"><span>Total: ${fmtCur(tot)}</span></div></div>`});
-cont.innerHTML=h}
+const TOKEN = 'eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJQaXBlZnkiLCJpYXQiOjE3Njk3NTE1MTMsImp0aSI6ImQ4YmM3OWJhLWQ3YzAtNGQ2ZC1hYWNlLTk4NWExMDAyZGVhZSIsInN1YiI6MzA2NjUxNTY5LCJ1c2VyIjp7ImlkIjozMDY2NTE1NjksImVtYWlsIjoibGF1cmEuYW5ndWlhbm9Aa29udGVtcG8uaW8ifSwidXNlcl90eXBlIjoiYXV0aGVudGljYXRlZCJ9.32ONOzY1ccY1K9Yhj4oDQPFnCVw8ozZtv9Lm950516rXcX7y-_d4Z8mRreW_EpPOhuTchsQgwg9SeoQOMnoHzQ';
+const PIPE_ID = '304500848';
+
+const PHASE_MAP = {
+  'Pending Information (Warehouse)': 'info',
+  'Risk Interview': 'risk',
+  'Approved - Pending Formalization Documents (Warehouse)': 'form',
+  'Approved - Pending Signature (Warehouse)': 'sig'
+};
+
+let chartsInstances = {};
+
+async function pipefy(query, variables = {}) {
+  const res = await fetch('https://api.pipefy.com/graphql', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ query, variables })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.errors) throw new Error(data.errors[0].message);
+  return data.data;
+}
+
+// Get pipe phases IDs
+async function getPhaseIds() {
+  const q = `{ pipe(id: ${PIPE_ID}) { phases { id name } } }`;
+  const data = await pipefy(q);
+  const phases = {};
+  for (const p of data.pipe.phases) {
+    if (PHASE_MAP[p.name]) phases[PHASE_MAP[p.name]] = p.id;
+  }
+  return phases;
+}
+
+// Get all cards from a phase (paginated)
+async function getPhaseCards(phaseId) {
+  let cards = [];
+  let cursor = null;
+  let hasMore = true;
+  while (hasMore) {
+    const q = `
+      query($phaseId: ID!, $after: String) {
+        phase(id: $phaseId) {
+          cards(first: 50, after: $after) {
+            pageInfo { hasNextPage endCursor }
+            edges {
+              node {
+                id title
+                fields { name value array_value }
+                assignees { name }
+              }
+            }
+          }
+        }
+      }
+    `;
+    const data = await pipefy(q, { phaseId, after: cursor });
+    const page = data.phase.cards;
+    cards.push(...page.edges.map(e => e.node));
+    hasMore = page.pageInfo.hasNextPage;
+    cursor = page.pageInfo.endCursor;
+  }
+  return cards;
+}
+
+function getField(card, name) {
+  const f = card.fields.find(f => f.name === name);
+  return f ? (f.value || '') : '';
+}
+
+function fmtMXN(n) {
+  if (!n) return '—';
+  return '$ ' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+function detectDocs(pendingText) {
+  const t = (pendingText || '').toLowerCase();
+  const hasSAT = t.includes('constancia') || t.includes('csf') || t.includes('situación fiscal') || t.includes('situacion fiscal') || t.includes('sat');
+  const hasOS = t.includes('obligado solidario') || t.includes('43qumym') || t.includes('buró') || t.includes('buro') || t.includes('os link');
+  const hasEDC = (t.includes('estado') && t.includes('cuenta')) || t.includes('edc');
+  return { hasSAT, hasOS, hasEDC };
+}
+
+function getDocChips(card, phase) {
+  let pendingText = '';
+  if (phase === 'info') pendingText = getField(card, 'Pending Information Requirements - Completed at') + ' ' + getField(card, 'PENDING DOCUMENTS:') + ' ' + getField(card, 'Pending Documents');
+  if (phase === 'form') pendingText = getField(card, 'Formalization Pending Documents') + ' ' + getField(card, 'Pending Documents');
+  // Also check all fields for pending-like content
+  if (!pendingText.trim()) {
+    const f = card.fields.find(f => f.name && f.name.toLowerCase().includes('pending'));
+    if (f) pendingText = f.value || '';
+  }
+  const { hasSAT, hasOS, hasEDC } = detectDocs(pendingText);
+  const chips = [];
+  if (hasSAT && hasOS) return [{ label: 'Falta SAT+OS', cls: 'chip-sat' }];
+  if (hasSAT) chips.push({ label: 'Falta SAT', cls: 'chip-sat' });
+  if (hasOS) chips.push({ label: 'Falta OS', cls: 'chip-os' });
+  if (hasEDC) chips.push({ label: 'Falta EDC/Otros', cls: 'chip-edc' });
+  if (chips.length === 0) chips.push({ label: 'Otros', cls: 'chip-otros' });
+  return chips;
+}
+
+function getKAM(card) {
+  // Try assignees first
+  if (card.assignees && card.assignees.length > 0) return card.assignees[0].name;
+  const f = card.fields.find(f => f.name && (f.name.includes('KAM') || f.name.includes('Customer Success')));
+  return f ? (f.value || 'Sin KAM') : 'Sin KAM';
+}
+
+function getAmount(card, field) {
+  const f = card.fields.find(f => f.name === field);
+  if (!f) return 0;
+  const v = (f.value || '').replace(/[^0-9.]/g, '');
+  return parseFloat(v) || 0;
+}
+
+function renderChart(id, type, data, options) {
+  if (chartsInstances[id]) chartsInstances[id].destroy();
+  const ctx = document.getElementById(id).getContext('2d');
+  chartsInstances[id] = new Chart(ctx, { type, data, options });
+}
+
+function renderDashboard(allCards) {
+  const info = allCards.filter(c => c._phase === 'info');
+  const risk = allCards.filter(c => c._phase === 'risk');
+  const form = allCards.filter(c => c._phase === 'form');
+  const sig  = allCards.filter(c => c._phase === 'sig');
+
+  // KPIs
+  document.getElementById('kpi-total').textContent = allCards.length;
+  document.getElementById('kpi-info').textContent = info.length;
+  document.getElementById('kpi-risk').textContent = risk.length;
+  document.getElementById('kpi-form').textContent = form.length;
+  document.getElementById('kpi-sig').textContent = sig.length;
+
+  const formAmt = form.reduce((s, c) => s + getAmount(c, 'Amount Approved - Credit Analysis'), 0);
+  const sigAmt  = sig.reduce((s, c)  => s + getAmount(c, 'Amount Approved - Credit Analysis'), 0);
+  document.getElementById('kpi-form-amt').textContent = fmtMXN(formAmt);
+  document.getElementById('kpi-sig-amt').textContent  = fmtMXN(sigAmt);
+
+  // Docs chart
+  const docCounts = { 'Falta SAT': 0, 'Falta OS': 0, 'Falta SAT+OS': 0, 'Falta EDC/Otros': 0, 'Otros': 0 };
+  for (const c of info) {
+    const chips = getDocChips(c, 'info');
+    for (const ch of chips) {
+      const k = ch.label;
+      if (docCounts[k] !== undefined) docCounts[k]++;
+      else docCounts['Otros']++;
+    }
+  }
+  renderChart('chartDocs', 'bar', {
+    labels: Object.keys(docCounts),
+    datasets: [{ data: Object.values(docCounts), backgroundColor: ['#FB8500','#00d4ff','#5A3EEF','#c084fc','#6b7280'], borderRadius: 4, borderSkipped: false }]
+  }, {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#1e2535' }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 10 } } },
+      y: { grid: { display: false }, ticks: { color: '#e8eaf0', font: { family: 'DM Sans', size: 11 } } }
+    }
+  });
+
+  // KAM pipeline chart
+  const kamAmounts = {};
+  const phaseColors = { info: '#00d4ff', risk: '#ffd32a', form: '#5A3EEF', sig: '#00e5a0' };
+  for (const c of allCards) {
+    const kam = getKAM(c);
+    if (!kamAmounts[kam]) kamAmounts[kam] = { info: 0, risk: 0, form: 0, sig: 0 };
+    const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved - Credit Analysis');
+    kamAmounts[kam][c._phase] += amt;
+  }
+  const kamNames = Object.keys(kamAmounts);
+  renderChart('chartKam', 'bar', {
+    labels: kamNames.map(k => k.split(' ')[0]),
+    datasets: [
+      { label: 'Information', data: kamNames.map(k => kamAmounts[k].info), backgroundColor: phaseColors.info, borderRadius: 2 },
+      { label: 'Risk', data: kamNames.map(k => kamAmounts[k].risk), backgroundColor: phaseColors.risk, borderRadius: 2 },
+      { label: 'Formalization', data: kamNames.map(k => kamAmounts[k].form), backgroundColor: phaseColors.form, borderRadius: 2 },
+      { label: 'Signature', data: kamNames.map(k => kamAmounts[k].sig), backgroundColor: phaseColors.sig, borderRadius: 2 }
+    ]
+  }, {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#6b7280', font: { family: 'DM Sans', size: 11 }, boxWidth: 10 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtMXN(ctx.raw)}` } }
+    },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { color: '#e8eaf0', font: { family: 'DM Sans', size: 11 } } },
+      y: { stacked: true, grid: { color: '#1e2535' }, ticks: { color: '#6b7280', font: { family: 'JetBrains Mono', size: 10 }, callback: v => v >= 1000000 ? (v/1000000).toFixed(1)+'M' : v >= 1000 ? (v/1000).toFixed(0)+'K' : v } }
+    }
+  });
+
+  // Priority table
+  const priority = info.filter(c => {
+    const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved - Credit Analysis');
+    const chips = getDocChips(c, 'info');
+    const hasSAT = chips.some(ch => ch.label.includes('SAT'));
+    const hasOS = chips.some(ch => ch.label.includes('OS'));
+    return amt > 200000 && hasSAT && !hasOS;
+  }).sort((a, b) => {
+    const aAmt = getAmount(a, 'Amount Requested') || getAmount(a, 'Amount Approved - Credit Analysis');
+    const bAmt = getAmount(b, 'Amount Requested') || getAmount(b, 'Amount Approved - Credit Analysis');
+    return bAmt - aAmt;
+  });
+
+  const tbody = document.getElementById('priority-tbody');
+  if (priority.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No hay priority cards en este momento</td></tr>';
+  } else {
+    tbody.innerHTML = priority.map(c => {
+      const buyerId = getField(c, 'Buyer Account ID') || c.id;
+      const amt = getAmount(c, 'Amount Requested') || getAmount(c, 'Amount Approved - Credit Analysis');
+      return `<tr>
+        <td class="buyer-id">${buyerId}</td>
+        <td>${c.title}</td>
+        <td class="amount-cell">${fmtMXN(amt)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // KAM tabs
+  // Group by KAM, then by merchant, order: sig > form > risk > info
+  const kamGroups = {};
+  for (const c of allCards) {
+    const kam = getKAM(c);
+    if (!kamGroups[kam]) kamGroups[kam] = [];
+    kamGroups[kam].push(c);
+  }
+
+  const tabsEl = document.getElementById('kam-tabs');
+  const contentsEl = document.getElementById('kam-contents');
+  tabsEl.innerHTML = '';
+  contentsEl.innerHTML = '';
+
+  const kamList = Object.keys(kamGroups).sort();
+  kamList.forEach((kam, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'kam-tab' + (i === 0 ? ' active' : '');
+    tab.textContent = kam.split(' ')[0] + ' (' + kamGroups[kam].length + ')';
+    tab.onclick = () => {
+      document.querySelectorAll('.kam-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.kam-content').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('kam-' + i).classList.add('active');
+    };
+    tabsEl.appendChild(tab);
+
+    const content = document.createElement('div');
+    content.className = 'kam-content' + (i === 0 ? ' active' : '');
+    content.id = 'kam-' + i;
+    content.innerHTML = renderKamContent(kamGroups[kam]);
+    contentsEl.appendChild(content);
+  });
+
+  // Update time
+  document.getElementById('last-update').textContent = 'Actualizado: ' + new Date().toLocaleTimeString('es-MX');
+}
+
+function renderKamContent(cards) {
+  const phases = [
+    { key: 'sig',  label: 'Approved - Pending Signature',       dot: 'dot-sig' },
+    { key: 'form', label: 'Approved - Pending Formalization Documents', dot: 'dot-form' },
+    { key: 'risk', label: 'Risk Interview',                      dot: 'dot-risk' },
+    { key: 'info', label: 'Pending Information',                 dot: 'dot-info' },
+  ];
+
+  let html = '';
+  for (const phase of phases) {
+    const phaseCards = cards.filter(c => c._phase === phase.key);
+    if (phaseCards.length === 0) continue;
+
+    // Group by merchant
+    const merchants = {};
+    for (const c of phaseCards) {
+      const m = getField(c, 'Merchant Name') || 'Sin Merchant';
+      if (!merchants[m]) merchants[m] = [];
+      merchants[m].push(c);
+    }
+
+    html += `<div class="funnel-section">
+      <div class="funnel-header">
+        <div class="funnel-dot ${phase.dot}"></div>
+        <div class="funnel-label">${phase.label}</div>
+        <div class="funnel-count">${phaseCards.length} buyers</div>
+      </div>`;
+
+    for (const [merchant, mCards] of Object.entries(merchants)) {
+      html += `<div style="margin-left:18px; margin-bottom:8px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;padding-left:4px">${merchant}</div>`;
+      for (const c of mCards) {
+        html += renderBuyerCard(c, phase.key);
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  return html || '<div class="empty-state">Sin cards en este KAM</div>';
+}
+
+function renderBuyerCard(card, phase) {
+  const buyerId = getField(card, 'Buyer Account ID') || card.id;
+  const reqAmt = getAmount(card, 'Amount Requested');
+  const approvedAmt = getAmount(card, 'Amount Approved - Credit Analysis');
+  const folder = getField(card, 'Buyer Drive Folder - Link');
+
+  let extra = '';
+
+  if (phase === 'info' || phase === 'form') {
+    const chips = getDocChips(card, phase);
+    extra = `<div class="chips">${chips.map(ch => `<span class="chip ${ch.cls}">${ch.label}</span>`).join('')}</div>`;
+    if (folder) extra += `<div class="doc-field">📁 ${folder}</div>`;
+  }
+
+  if (phase === 'risk') {
+    const entrevista = getField(card, 'Notas - Request Review') || getField(card, 'Notas - Request Review CS/CX') || '';
+    const agendada = entrevista.toLowerCase().includes('agenda') || entrevista.toLowerCase().includes('schedul');
+    extra = `<div class="chips"><span class="badge ${agendada ? 'badge-ok' : 'badge-pend'}">${agendada ? '✓ entrevista agendada' : '⏳ pendiente'}</span></div>`;
+  }
+
+  if (phase === 'sig') {
+    const osLink = getField(card, 'OS Link');
+    const driveLink = folder;
+    if (osLink) extra += `<div class="sig-link">OS: ${osLink}</div>`;
+    if (driveLink) extra += `<div class="sig-link">Drive: ${driveLink}</div>`;
+  }
+
+  const displayAmt = approvedAmt || reqAmt;
+
+  return `<div class="buyer-card">
+    <div class="buyer-card-header">
+      <div>
+        <div class="buyer-name">${card.title}</div>
+        <div class="buyer-id">${buyerId}</div>
+      </div>
+      ${displayAmt ? `<div class="buyer-amount">${fmtMXN(displayAmt)}</div>` : ''}
+    </div>
+    ${extra}
+  </div>`;
+}
+
+async function loadData() {
+  document.getElementById('loader').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('error-banner').style.display = 'none';
+
+  try {
+    const phaseIds = await getPhaseIds();
+    const missing = Object.keys(PHASE_MAP).filter(name => {
+      const key = PHASE_MAP[name];
+      return !phaseIds[key];
+    });
+    if (missing.length > 0) {
+      console.warn('Fases no encontradas:', missing);
+    }
+
+    const allCards = [];
+    for (const [phaseKey, phaseId] of Object.entries(phaseIds)) {
+      if (!phaseId) continue;
+      const cards = await getPhaseCards(phaseId);
+      cards.forEach(c => c._phase = phaseKey);
+      allCards.push(...cards);
+    }
+
+    renderDashboard(allCards);
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+  } catch (err) {
+    document.getElementById('loader').style.display = 'none';
+    const banner = document.getElementById('error-banner');
+    banner.style.display = 'block';
+    banner.textContent = '⚠ Error cargando datos: ' + err.message + '. Verifica tu token y conexión a Pipefy.';
+    document.getElementById('app').style.display = 'block';
+  }
+}
+
+loadData();
 </script>
 </body>
 </html>
